@@ -326,7 +326,7 @@ Card contents:
 
 | Phase | Feature | Complexity | Status |
 |-------|---------|------------|--------|
-| 1 | Project setup | Low | [ ] |
+| 1 | Project setup | Low | [x] |
 | 2 | DB schema | Medium | [ ] |
 | 3 | Auth | Low | [ ] |
 | 4 | Player roster | Low | [ ] |
