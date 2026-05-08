@@ -4,7 +4,10 @@
       "PowerShell(node --version; npm.cmd --version)",
       "PowerShell(New-Item *)",
       "PowerShell(Get-Process *)",
-      "PowerShell(Out-Null *)"
+      "PowerShell(Out-Null *)",
+      "PowerShell(supabase *)",
+      "PowerShell(npm.cmd install -g supabase 2>&1)",
+      "PowerShell(winget install *)"
     ]
   }
 }
