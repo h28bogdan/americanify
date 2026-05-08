@@ -2,7 +2,9 @@
   "permissions": {
     "allow": [
       "PowerShell(node --version; npm.cmd --version)",
-      "PowerShell(New-Item *)"
+      "PowerShell(New-Item *)",
+      "PowerShell(Get-Process *)",
+      "PowerShell(Out-Null *)"
     ]
   }
 }

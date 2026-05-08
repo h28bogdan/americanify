@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(Start-Sleep -Seconds *; Get-Content *)",
+      "PowerShell(Get-Content *)",
+      "PowerShell(npm.cmd run test:run)",
+      "PowerShell(& \"C:\\Program Files\\GitHub CLI\\gh.exe\" auth status*)"
+    ]
+  }
+}
