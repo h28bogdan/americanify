@@ -14,7 +14,17 @@ export function NewEventForm({
   action: (formData: FormData) => Promise<void>
 }) {
   const [courtCount, setCourtCount] = useState(2)
+  const [courtNames, setCourtNames] = useState<string[]>(['', ''])
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+
+  function handleCourtCountChange(n: number) {
+    setCourtCount(n)
+    setCourtNames((prev) => {
+      const next = [...prev]
+      while (next.length < n) next.push('')
+      return next.slice(0, n)
+    })
+  }
 
   const needed = courtCount * 4
   const hasEnough = selectedIds.size >= needed
@@ -48,13 +58,30 @@ export function NewEventForm({
           name="court_count"
           required
           value={courtCount}
-          onChange={(e) => setCourtCount(Number(e.target.value))}
+          onChange={(e) => handleCourtCountChange(Number(e.target.value))}
           className="h-8 rounded-lg border border-border bg-background px-3 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/30"
         >
           {Array.from({ length: 7 }, (_, i) => i + 1).map((n) => (
             <option key={n} value={n}>{n}</option>
           ))}
         </select>
+      </div>
+
+      <div className="space-y-2">
+        <p className="text-sm font-medium">Court names <span className="text-muted-foreground font-normal">(optional)</span></p>
+        {Array.from({ length: courtCount }, (_, i) => (
+          <div key={i} className="flex items-center gap-3">
+            <span className="text-sm text-muted-foreground w-16 shrink-0">Court {i + 1}</span>
+            <input
+              name={`court_name_${i + 1}`}
+              type="text"
+              placeholder={`Court ${i + 1}`}
+              value={courtNames[i] ?? ''}
+              onChange={(e) => setCourtNames((prev) => { const next = [...prev]; next[i] = e.target.value; return next })}
+              className="flex-1 h-8 rounded-lg border border-border bg-background px-3 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/30"
+            />
+          </div>
+        ))}
       </div>
 
       <div className="space-y-2">

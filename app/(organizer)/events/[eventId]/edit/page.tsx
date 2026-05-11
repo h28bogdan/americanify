@@ -11,7 +11,7 @@ export default async function EditEventPage({ params }: { params: { eventId: str
   const [{ data: event }, { data: allPlayers }, { data: courts }, { data: eventPlayers }] = await Promise.all([
     supabase.from('events').select('id, name, status').eq('id', params.eventId).eq('organizer_id', user.id).single(),
     supabase.from('players').select('id, name, level').eq('organizer_id', user.id).order('name'),
-    supabase.from('courts').select('id').eq('event_id', params.eventId),
+    supabase.from('courts').select('id, court_number, name').eq('event_id', params.eventId).order('court_number'),
     supabase.from('event_players').select('player_id').eq('event_id', params.eventId),
   ])
 
@@ -37,6 +37,7 @@ export default async function EditEventPage({ params }: { params: { eventId: str
       Array.from({ length: courtCount }, (_, i) => ({
         event_id: params.eventId,
         court_number: i + 1,
+        name: (formData.get(`court_name_${i + 1}`) as string)?.trim() || null,
       }))
     )
 
@@ -62,6 +63,7 @@ export default async function EditEventPage({ params }: { params: { eventId: str
         <EditEventForm
           defaultName={event.name}
           defaultCourtCount={courts?.length ?? 1}
+          defaultCourtNames={courts?.map((c) => c.name ?? '') ?? []}
           players={allPlayers ?? []}
           selectedPlayerIds={currentPlayerIds}
           action={updateEvent}
