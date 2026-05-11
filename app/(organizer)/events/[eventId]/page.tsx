@@ -129,15 +129,21 @@ export default async function EventPage({ params }: { params: { eventId: string 
         {/* Nav links */}
         <div className="grid grid-cols-2 gap-3">
           {[
-            { label: 'Rounds', href: `/events/${event.id}/rounds` },
-            { label: 'Standings', href: `/events/${event.id}/standings` },
-            { label: 'Voting', href: `/events/${event.id}/voting` },
-            { label: 'Recap', href: `/events/${event.id}/recap` },
-          ].map(({ label, href }) => (
-            <Link key={label} href={href} className="flex items-center justify-center rounded-lg border border-border py-4 text-sm font-medium hover:bg-muted/50 transition-colors">
-              {label}
-            </Link>
-          ))}
+            { label: 'Rounds', href: `/events/${event.id}/rounds`, enabled: event.status !== 'draft' },
+            { label: 'Standings', href: `/events/${event.id}/standings`, enabled: event.status !== 'draft' },
+            { label: 'Voting', href: `/events/${event.id}/voting`, enabled: event.status === 'voting' || event.status === 'published' },
+            { label: 'Recap', href: `/events/${event.id}/recap`, enabled: event.status === 'published' },
+          ].map(({ label, href, enabled }) =>
+            enabled ? (
+              <Link key={label} href={href} className="flex items-center justify-center rounded-lg border border-border py-4 text-sm font-medium hover:bg-muted/50 transition-colors">
+                {label}
+              </Link>
+            ) : (
+              <div key={label} className="flex items-center justify-center rounded-lg border border-border py-4 text-sm font-medium text-muted-foreground opacity-40 cursor-not-allowed select-none">
+                {label}
+              </div>
+            )
+          )}
         </div>
 
         {/* Players + courts summary */}
