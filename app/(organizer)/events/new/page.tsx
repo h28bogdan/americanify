@@ -43,6 +43,7 @@ export default async function NewEventPage() {
       Array.from({ length: courtCount }, (_, i) => ({
         event_id: event.id,
         court_number: i + 1,
+        name: (formData.get(`court_name_${i + 1}`) as string)?.trim() || null,
       }))
     )
 
