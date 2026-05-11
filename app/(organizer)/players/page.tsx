@@ -3,8 +3,7 @@ import { revalidatePath } from 'next/cache'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { Button } from '@/components/ui/button'
-
-const LEVELS = [1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 5.5, 6.0, 6.5, 7.0]
+import { AddPlayerForm } from './add-player-form'
 
 export default async function PlayersPage() {
   const supabase = createClient()
@@ -84,25 +83,7 @@ export default async function PlayersPage() {
 
         <div className="rounded-lg border border-border p-4 space-y-3">
           <h2 className="font-medium">Add player</h2>
-          <form action={addPlayer} className="flex items-center gap-3">
-            <input
-              name="name"
-              type="text"
-              required
-              placeholder="Name"
-              className="flex-1 h-8 rounded-lg border border-border bg-background px-3 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/30"
-            />
-            <select
-              name="level"
-              className="h-8 rounded-lg border border-border bg-background px-3 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/30"
-            >
-              <option value="">Level</option>
-              {LEVELS.map((l) => (
-                <option key={l} value={l}>{l.toFixed(1)}</option>
-              ))}
-            </select>
-            <Button type="submit">Add</Button>
-          </form>
+          <AddPlayerForm action={addPlayer} />
         </div>
       </div>
     </div>
