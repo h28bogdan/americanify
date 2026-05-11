@@ -1,0 +1,106 @@
+'use client'
+
+import { useState } from 'react'
+import Link from 'next/link'
+import { Button } from '@/components/ui/button'
+
+type Player = { id: string; name: string; level: number | null }
+
+export function NewEventForm({
+  players,
+  action,
+}: {
+  players: Player[]
+  action: (formData: FormData) => Promise<void>
+}) {
+  const [courtCount, setCourtCount] = useState(2)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+
+  const needed = courtCount * 4
+  const hasEnough = selectedIds.size >= needed
+
+  function togglePlayer(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+  }
+
+  return (
+    <form action={action} className="space-y-6">
+      <div className="space-y-2">
+        <label htmlFor="name" className="text-sm font-medium">Event name</label>
+        <input
+          id="name"
+          name="name"
+          type="text"
+          required
+          placeholder="Monday Americano"
+          className="w-full h-8 rounded-lg border border-border bg-background px-3 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/30"
+        />
+      </div>
+
+      <div className="space-y-2">
+        <label htmlFor="court_count" className="text-sm font-medium">Number of courts</label>
+        <select
+          id="court_count"
+          name="court_count"
+          required
+          value={courtCount}
+          onChange={(e) => setCourtCount(Number(e.target.value))}
+          className="h-8 rounded-lg border border-border bg-background px-3 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/30"
+        >
+          {Array.from({ length: 7 }, (_, i) => i + 1).map((n) => (
+            <option key={n} value={n}>{n}</option>
+          ))}
+        </select>
+      </div>
+
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-medium">Players</p>
+          <p className={`text-sm ${hasEnough ? 'text-muted-foreground' : 'text-destructive'}`}>
+            {selectedIds.size} selected · {needed} needed
+          </p>
+        </div>
+
+        {!players.length ? (
+          <p className="text-sm text-muted-foreground">
+            No players yet.{' '}
+            <Link href="/players" className="underline">Add players first.</Link>
+          </p>
+        ) : (
+          <div className="rounded-lg border border-border divide-y divide-border">
+            {players.map((player) => (
+              <label key={player.id} className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-muted/50">
+                <input
+                  type="checkbox"
+                  name="player_ids"
+                  value={player.id}
+                  checked={selectedIds.has(player.id)}
+                  onChange={() => togglePlayer(player.id)}
+                  className="h-4 w-4 rounded"
+                />
+                <span className="flex-1 text-sm font-medium">{player.name}</span>
+                {player.level != null && (
+                  <span className="text-sm text-muted-foreground">Level {Number(player.level).toFixed(1)}</span>
+                )}
+              </label>
+            ))}
+          </div>
+        )}
+
+        {!hasEnough && selectedIds.size > 0 && (
+          <p className="text-sm text-destructive">
+            Select {needed - selectedIds.size} more player{needed - selectedIds.size !== 1 ? 's' : ''} for {courtCount} court{courtCount !== 1 ? 's' : ''}.
+          </p>
+        )}
+      </div>
+
+      <Button type="submit" disabled={!players.length || !hasEnough}>
+        Create event
+      </Button>
+    </form>
+  )
+}

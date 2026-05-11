@@ -7,7 +7,10 @@
       "PowerShell(Out-Null *)",
       "PowerShell(supabase *)",
       "PowerShell(npm.cmd install -g supabase 2>&1)",
-      "PowerShell(winget install *)"
+      "PowerShell(winget install *)",
+      "Bash(npx tsc *)",
+      "Bash(npm run *)",
+      "Bash(npx supabase *)"
     ]
   }
 }
