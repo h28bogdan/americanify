@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { ScoreForm, type MatchForScoring } from './score-form'
 import { generateRound, type MatchHistoryEntry } from '@/lib/algorithms/americano'
 
-export default async function RoundsPage({ params }: { params: { eventId: string } }) {
+export default async function RoundsPage({ params, searchParams }: { params: { eventId: string }; searchParams: { edit?: string } }) {
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
@@ -57,6 +57,29 @@ export default async function RoundsPage({ params }: { params: { eventId: string
       .map((ep: any) => ep.players?.name ?? '')
       .filter(Boolean)
       .sort()
+  }
+
+  // Fetch edit round data if ?edit= param is set
+  let editMatches: MatchForScoring[] = []
+  const editRoundId = searchParams.edit ?? null
+  if (editRoundId) {
+    const { data: editRawMatches } = await supabase
+      .from('matches')
+      .select('id, courts(court_number, name), match_players(player_id, team, players(name)), scores(team_a_points)')
+      .eq('round_id', editRoundId)
+
+    editMatches = (editRawMatches ?? []).map((m: any) => {
+      const mps: { player_id: string; team: string; players: { name: string } }[] = m.match_players ?? []
+      const scoreA = m.scores?.[0]?.team_a_points ?? m.scores?.team_a_points ?? 12
+      return {
+        id: m.id,
+        courtNumber: m.courts?.court_number ?? 0,
+        courtName: m.courts?.name ?? null,
+        teamA: mps.filter((mp) => mp.team === 'A').map((mp) => mp.players?.name ?? ''),
+        teamB: mps.filter((mp) => mp.team === 'B').map((mp) => mp.players?.name ?? ''),
+        scoreA,
+      }
+    }).sort((a, b) => a.courtNumber - b.courtNumber)
   }
 
   // ── Server actions ──────────────────────────────────────────────
@@ -194,6 +217,28 @@ export default async function RoundsPage({ params }: { params: { eventId: string
     revalidatePath(`/events/${params.eventId}/rounds`)
   }
 
+  async function handleUpdateScores(formData: FormData) {
+    'use server'
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+
+    const roundId = formData.get('round_id') as string
+    const { data: matches } = await supabase.from('matches').select('id').eq('round_id', roundId)
+    if (!matches?.length) return
+
+    for (const match of matches) {
+      const teamA = parseInt(formData.get(`score_${match.id}`) as string, 10)
+      if (isNaN(teamA) || teamA < 0 || teamA > 24) return
+      await supabase.from('scores').upsert(
+        { match_id: match.id, team_a_points: teamA, team_b_points: 24 - teamA },
+        { onConflict: 'match_id' }
+      )
+    }
+
+    redirect(`/events/${params.eventId}/rounds`)
+  }
+
   async function handleToggleCourt(formData: FormData) {
     'use server'
     const supabase = createClient()
@@ -290,9 +335,27 @@ export default async function RoundsPage({ params }: { params: { eventId: string
             <p className="text-sm font-medium text-muted-foreground">Previous rounds</p>
             <div className="rounded-lg border border-border divide-y divide-border">
               {pastRounds.map((round) => (
-                <div key={round.id} className="flex items-center justify-between px-4 py-2.5">
-                  <span className="text-sm">Round {round.round_number}</span>
-                  <span className="text-xs text-muted-foreground">completed</span>
+                <div key={round.id}>
+                  <div className="flex items-center justify-between px-4 py-2.5">
+                    <span className="text-sm">Round {round.round_number}</span>
+                    {editRoundId === round.id ? (
+                      <Link href="?" className="text-xs text-muted-foreground hover:underline">Cancel</Link>
+                    ) : (
+                      <Link href={`?edit=${round.id}`} className="text-xs text-muted-foreground hover:text-foreground hover:underline">
+                        Edit scores
+                      </Link>
+                    )}
+                  </div>
+                  {editRoundId === round.id && editMatches.length > 0 && (
+                    <div className="px-4 pb-4">
+                      <ScoreForm
+                        matches={editMatches}
+                        roundId={round.id}
+                        action={handleUpdateScores}
+                        submitLabel="Update scores"
+                      />
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

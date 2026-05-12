@@ -9,19 +9,22 @@ export type MatchForScoring = {
   courtName: string | null
   teamA: string[]
   teamB: string[]
+  scoreA?: number
 }
 
 export function ScoreForm({
   matches,
   roundId,
   action,
+  submitLabel = 'Submit scores',
 }: {
   matches: MatchForScoring[]
   roundId: string
   action: (formData: FormData) => Promise<void>
+  submitLabel?: string
 }) {
   const [scores, setScores] = useState<Record<string, number>>(
-    Object.fromEntries(matches.map((m) => [m.id, 12]))
+    Object.fromEntries(matches.map((m) => [m.id, m.scoreA ?? 12]))
   )
 
   function courtLabel(m: MatchForScoring) {
@@ -60,7 +63,7 @@ export function ScoreForm({
         </div>
       ))}
 
-      <Button type="submit" className="w-full">Submit scores</Button>
+      <Button type="submit" className="w-full">{submitLabel}</Button>
     </form>
   )
 }
