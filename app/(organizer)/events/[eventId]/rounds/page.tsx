@@ -250,6 +250,25 @@ export default async function RoundsPage({ params, searchParams }: { params: { e
     revalidatePath(`/events/${params.eventId}/rounds`)
   }
 
+  async function handleDeleteLatestRound() {
+    'use server'
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+
+    const { data: latest } = await supabase
+      .from('rounds')
+      .select('id')
+      .eq('event_id', params.eventId)
+      .order('round_number', { ascending: false })
+      .limit(1)
+      .single()
+
+    if (!latest) return
+    await supabase.from('rounds').delete().eq('id', latest.id)
+    revalidatePath(`/events/${params.eventId}/rounds`)
+  }
+
   async function handleEndEvent() {
     'use server'
     const supabase = createClient()
@@ -317,7 +336,7 @@ export default async function RoundsPage({ params, searchParams }: { params: { e
 
         {/* Actions */}
         {!hasActiveRound && (
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-3">
             <form action={handleGenerateRound}>
               <Button type="submit">
                 {rounds?.length ? 'Next round' : 'Generate first round'}
@@ -326,6 +345,13 @@ export default async function RoundsPage({ params, searchParams }: { params: { e
             <form action={handleEndEvent}>
               <Button type="submit" variant="outline">End event</Button>
             </form>
+            {rounds && rounds.length > 0 && (
+              <form action={handleDeleteLatestRound}>
+                <Button type="submit" variant="destructive" size="sm">
+                  Delete round {rounds[0].round_number}
+                </Button>
+              </form>
+            )}
           </div>
         )}
 
