@@ -10,7 +10,8 @@
       "PowerShell(winget install *)",
       "Bash(npx tsc *)",
       "Bash(npm run *)",
-      "Bash(npx supabase *)"
+      "Bash(npx supabase *)",
+      "Bash(npx vitest *)"
     ]
   }
 }
