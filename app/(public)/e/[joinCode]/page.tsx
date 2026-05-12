@@ -151,6 +151,17 @@ export default async function PublicEventPage({
           )}
         </div>
 
+        {/* Recap banner */}
+        {event.status === 'published' && (
+          <Link
+            href={`/e/${params.joinCode}/recap`}
+            className="flex items-center justify-between rounded-lg bg-foreground px-4 py-3 text-background hover:opacity-90 transition-opacity"
+          >
+            <span className="text-sm font-medium">Recap & player cards are ready</span>
+            <span className="text-sm">→</span>
+          </Link>
+        )}
+
         {/* Standings */}
         {standings.length > 0 && (
           <div className="space-y-2">

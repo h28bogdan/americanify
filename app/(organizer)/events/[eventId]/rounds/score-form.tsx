@@ -51,6 +51,7 @@ export function ScoreForm({
                 onChange={(e) =>
                   setScores((prev) => ({ ...prev, [match.id]: Math.max(0, Math.min(24, Number(e.target.value))) }))
                 }
+                onFocus={(e) => e.target.select()}
                 className="w-14 h-8 rounded-lg border border-border bg-background px-2 text-center text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/30"
               />
               <span className="text-muted-foreground">–</span>
