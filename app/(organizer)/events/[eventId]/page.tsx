@@ -98,9 +98,14 @@ export default async function EventPage({ params }: { params: { eventId: string 
               {STATUS_LABELS[event.status]}
             </span>
           </div>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Join code: <span className="font-mono font-medium">{event.join_code}</span>
-          </p>
+          <div className="mt-1 flex items-center gap-3">
+            <p className="text-sm text-muted-foreground">
+              Join code: <span className="font-mono font-medium">{event.join_code}</span>
+            </p>
+            <Link href={`/events/${params.eventId}/qr`} className="text-sm text-muted-foreground hover:text-foreground hover:underline">
+              QR →
+            </Link>
+          </div>
         </div>
 
         {/* Actions */}
