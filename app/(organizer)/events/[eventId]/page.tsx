@@ -2,6 +2,7 @@ import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { Button } from '@/components/ui/button'
+import { CopyButton } from '@/components/copy-button'
 
 function generateJoinCode() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
@@ -192,6 +193,17 @@ export default async function EventPage({ params, searchParams }: { params: { ev
             ))}
           </div>
         </div>
+
+        {/* Share recap */}
+        {event.status === 'published' && (
+          <div className="rounded-lg border border-border p-4 space-y-3">
+            <p className="text-sm font-medium">Share recap</p>
+            <p className="text-sm text-muted-foreground font-mono break-all">
+              {`https://americanify.vercel.app/e/${event.join_code}/recap`}
+            </p>
+            <CopyButton text={`https://americanify.vercel.app/e/${event.join_code}/recap`} />
+          </div>
+        )}
 
         {/* Danger zone */}
         <div className="border-t border-border pt-6">
