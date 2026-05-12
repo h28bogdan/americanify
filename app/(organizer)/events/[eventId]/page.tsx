@@ -22,7 +22,7 @@ const STATUS_STYLES: Record<string, string> = {
   published: 'bg-purple-100 text-purple-800',
 }
 
-export default async function EventPage({ params }: { params: { eventId: string } }) {
+export default async function EventPage({ params, searchParams }: { params: { eventId: string }; searchParams: { confirm?: string } }) {
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
@@ -86,6 +86,17 @@ export default async function EventPage({ params }: { params: { eventId: string 
 
     redirect(`/events/${newEvent.id}`)
   }
+
+  async function deleteEvent() {
+    'use server'
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+    await supabase.from('events').delete().eq('id', params.eventId).eq('organizer_id', user.id)
+    redirect('/dashboard')
+  }
+
+  const confirmingDelete = searchParams.confirm === 'delete'
 
   return (
     <div className="min-h-screen bg-background p-6">
@@ -180,6 +191,32 @@ export default async function EventPage({ params }: { params: { eventId: string 
               </div>
             ))}
           </div>
+        </div>
+
+        {/* Danger zone */}
+        <div className="border-t border-border pt-6">
+          {!confirmingDelete ? (
+            <Link
+              href="?confirm=delete"
+              className="text-sm text-destructive hover:underline"
+            >
+              Delete event
+            </Link>
+          ) : (
+            <div className="space-y-3">
+              <p className="text-sm font-medium text-destructive">
+                Delete &ldquo;{event.name}&rdquo;? This removes all rounds, scores, and votes and cannot be undone.
+              </p>
+              <div className="flex gap-3">
+                <form action={deleteEvent}>
+                  <Button type="submit" variant="destructive" size="sm">Yes, delete</Button>
+                </form>
+                <Link href="?" className="text-sm text-muted-foreground hover:underline self-center">
+                  Cancel
+                </Link>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
