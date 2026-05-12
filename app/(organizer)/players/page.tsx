@@ -60,14 +60,14 @@ export default async function PlayersPage() {
           )}
           {players?.map((player) => (
             <div key={player.id} className="flex items-center justify-between px-4 py-3">
-              <div>
+              <Link href={`/players/${player.id}`} className="hover:underline">
                 <span className="font-medium">{player.name}</span>
                 {player.level != null && (
                   <span className="ml-2 text-sm text-muted-foreground">
                     Level {Number(player.level).toFixed(1)}
                   </span>
                 )}
-              </div>
+              </Link>
               <div className="flex gap-2">
                 <Link href={`/players/${player.id}`}>
                   <Button variant="outline" size="sm">Edit</Button>
