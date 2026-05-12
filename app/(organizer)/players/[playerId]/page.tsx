@@ -59,7 +59,7 @@ export default async function PlayerProfilePage({ params }: { params: { playerId
         .from('matches')
         .select('id, round_id, match_players(player_id, team), scores(team_a_points, team_b_points)')
         .in('round_id', roundIds)
-      rawMatches = (data ?? []) as typeof rawMatches
+      rawMatches = (data ?? []) as unknown as typeof rawMatches
     }
 
     const roundToEvent = Object.fromEntries((completedRounds ?? []).map((r) => [r.id, r.event_id]))
