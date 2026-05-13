@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
-import { computeStandings, type ScoredMatchEntry } from '@/lib/utils/standings'
+import { computeStandings, computeTeamStandingsFromRaw, type ScoredMatchEntry, type RawMatch } from '@/lib/utils/standings'
 import { PlayerPicker, IdentitySaver, ClearIdentityButton } from '@/components/player-identity'
 
 const PUBLIC_CATEGORIES = [
@@ -24,6 +24,8 @@ const STATUS_LABELS: Record<string, string> = {
   published: 'Published',
 }
 
+type PublicRow = { name: string; rank: number; points: number; wins: number; diff: number; roundsPlayed: number; playerId?: string }
+
 export default async function PublicEventPage({
   params,
   searchParams,
@@ -35,11 +37,13 @@ export default async function PublicEventPage({
 
   const { data: event } = await supabase
     .from('events')
-    .select('id, name, status')
+    .select('id, name, status, format')
     .eq('join_code', params.joinCode)
     .single()
 
   if (!event || event.status === 'draft') notFound()
+
+  const isTeamFormat = event.format === 'team_americano'
 
   const [{ data: eventPlayers }, { data: completedRounds }] = await Promise.all([
     supabase
@@ -59,18 +63,24 @@ export default async function PublicEventPage({
     name: (ep.players as unknown as { id: string; name: string }).name,
   }))
 
-  // Compute standings
+  const roundIds = completedRounds?.map((r) => r.id) ?? []
+  const rawMatchesData: RawMatch[] = []
   const scoredMatches: ScoredMatchEntry[] = []
   let allMatchPlayers: { matchId: string; playerId: string; team: string }[] = []
-  const roundIds = completedRounds?.map((r) => r.id) ?? []
+
   if (roundIds.length) {
-    const { data: rawMatches } = await supabase
+    const { data: fetchedMatches } = await supabase
       .from('matches')
       .select('id, match_players(player_id, team), scores(team_a_points, team_b_points)')
       .in('round_id', roundIds)
 
-    for (const m of rawMatches ?? []) {
+    for (const m of fetchedMatches ?? []) {
       const score = m.scores as unknown as { team_a_points: number; team_b_points: number } | null
+      rawMatchesData.push({
+        id: m.id,
+        match_players: (m.match_players as { player_id: string; team: string }[]) ?? [],
+        scores: score,
+      })
       for (const mp of (m.match_players as { player_id: string; team: string }[]) ?? []) {
         allMatchPlayers.push({ matchId: m.id, playerId: mp.player_id, team: mp.team })
         if (!score) continue
@@ -84,7 +94,24 @@ export default async function PublicEventPage({
     }
   }
 
-  const standings = computeStandings(players, scoredMatches)
+  let standings: PublicRow[]
+  if (isTeamFormat) {
+    const { data: eventTeams } = await supabase
+      .from('event_teams')
+      .select('id, player_a_id, player_b_id')
+      .eq('event_id', event.id)
+    const playerMap = new Map(players.map((p) => [p.id, p.name]))
+    const teams = (eventTeams ?? []).map((t) => ({
+      id: t.id,
+      player_a_id: t.player_a_id,
+      player_b_id: t.player_b_id,
+      playerAName: playerMap.get(t.player_a_id) ?? '?',
+      playerBName: playerMap.get(t.player_b_id) ?? '?',
+    }))
+    standings = computeTeamStandingsFromRaw(teams, rawMatchesData)
+  } else {
+    standings = computeStandings(players, scoredMatches)
+  }
 
   // Resolve voter from search param
   const voterId = searchParams.p
@@ -196,8 +223,8 @@ export default async function PublicEventPage({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
-                  {standings.map((row) => (
-                    <tr key={row.playerId} className={voter?.id === row.playerId ? 'bg-muted/40' : ''}>
+                  {standings.map((row, i) => (
+                    <tr key={i} className={voter?.id === row.playerId ? 'bg-muted/40' : ''}>
                       <td className="px-4 py-2.5 text-muted-foreground">{row.rank}</td>
                       <td className="px-4 py-2.5 font-medium">{row.name}</td>
                       <td className="px-4 py-2.5 text-right font-semibold">{row.points}</td>
