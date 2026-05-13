@@ -3,9 +3,11 @@
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import type { StandingRow } from '@/lib/utils/standings'
+import type { StandingRow, TeamStandingRow } from '@/lib/utils/standings'
 
-export function StandingsTable({ rows, live }: { rows: StandingRow[]; live: boolean }) {
+type AnyRow = Pick<StandingRow | TeamStandingRow, 'name' | 'rank' | 'points' | 'wins' | 'diff' | 'roundsPlayed'>
+
+export function StandingsTable({ rows, live }: { rows: AnyRow[]; live: boolean }) {
   const router = useRouter()
 
   useEffect(() => {
@@ -38,8 +40,8 @@ export function StandingsTable({ rows, live }: { rows: StandingRow[]; live: bool
           </tr>
         </thead>
         <tbody className="divide-y divide-border">
-          {rows.map((row) => (
-            <tr key={row.playerId} className="hover:bg-muted/30 transition-colors">
+          {rows.map((row, i) => (
+            <tr key={i} className="hover:bg-muted/30 transition-colors">
               <td className="px-4 py-2.5 text-muted-foreground">{row.rank}</td>
               <td className="px-4 py-2.5 font-medium">{row.name}</td>
               <td className="px-4 py-2.5 text-right font-semibold">{row.points}</td>

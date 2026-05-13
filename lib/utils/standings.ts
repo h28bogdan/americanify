@@ -53,6 +53,36 @@ export function computeTeamStandings(
   })
 }
 
+export type RawMatch = {
+  id: string
+  match_players: { player_id: string; team: string }[]
+  scores: { team_a_points: number; team_b_points: number } | null
+}
+
+export function computeTeamStandingsFromRaw(
+  eventTeams: { id: string; player_a_id: string; player_b_id: string; playerAName: string; playerBName: string }[],
+  rawMatches: RawMatch[]
+): TeamStandingRow[] {
+  const playerToTeamId = new Map<string, string>()
+  for (const t of eventTeams) {
+    playerToTeamId.set(t.player_a_id, t.id)
+    playerToTeamId.set(t.player_b_id, t.id)
+  }
+
+  const teamMatches: TeamScoredMatchEntry[] = []
+  for (const m of rawMatches) {
+    if (!m.scores) continue
+    const teamAPlayerId = (m.match_players as { player_id: string; team: string }[]).find((mp) => mp.team === 'A')?.player_id
+    const teamBPlayerId = (m.match_players as { player_id: string; team: string }[]).find((mp) => mp.team === 'B')?.player_id
+    const teamAId = teamAPlayerId ? playerToTeamId.get(teamAPlayerId) : undefined
+    const teamBId = teamBPlayerId ? playerToTeamId.get(teamBPlayerId) : undefined
+    if (teamAId) teamMatches.push({ teamId: teamAId, team: 'A', teamAPoints: m.scores.team_a_points, teamBPoints: m.scores.team_b_points })
+    if (teamBId) teamMatches.push({ teamId: teamBId, team: 'B', teamAPoints: m.scores.team_a_points, teamBPoints: m.scores.team_b_points })
+  }
+
+  return computeTeamStandings(eventTeams, teamMatches)
+}
+
 export type StandingRow = {
   playerId: string
   name: string
