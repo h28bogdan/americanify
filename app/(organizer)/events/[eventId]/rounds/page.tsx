@@ -3,6 +3,7 @@ import { revalidatePath } from 'next/cache'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { Button } from '@/components/ui/button'
+import { SubmitButton } from '@/components/submit-button'
 import { ScoreForm, type MatchForScoring } from './score-form'
 import { generateRound, type MatchHistoryEntry } from '@/lib/algorithms/americano'
 
@@ -338,18 +339,18 @@ export default async function RoundsPage({ params, searchParams }: { params: { e
         {!hasActiveRound && (
           <div className="flex flex-wrap gap-3">
             <form action={handleGenerateRound}>
-              <Button type="submit">
+              <SubmitButton pendingLabel="Generating…">
                 {rounds?.length ? 'Next round' : 'Generate first round'}
-              </Button>
+              </SubmitButton>
             </form>
             <form action={handleEndEvent}>
-              <Button type="submit" variant="outline">End event</Button>
+              <SubmitButton variant="outline" pendingLabel="Ending…">End event</SubmitButton>
             </form>
             {rounds && rounds.length > 0 && (
               <form action={handleDeleteLatestRound}>
-                <Button type="submit" variant="destructive" size="sm">
+                <SubmitButton variant="destructive" size="sm" pendingLabel="Deleting…">
                   Delete round {rounds[0].round_number}
-                </Button>
+                </SubmitButton>
               </form>
             )}
           </div>

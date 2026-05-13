@@ -1,7 +1,7 @@
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
-import { Button } from '@/components/ui/button'
+import { SubmitButton } from '@/components/submit-button'
 
 const PUBLIC_CATEGORIES = [
   { id: 'mvp', name: 'MVP' },
@@ -138,7 +138,7 @@ export default async function VotingPage({ params }: { params: { eventId: string
         {/* Publish */}
         {event.status === 'voting' && (
           <form action={publishRecap}>
-            <Button type="submit">Publish recap</Button>
+            <SubmitButton pendingLabel="Publishing…">Publish recap</SubmitButton>
           </form>
         )}
         {event.status === 'published' && (

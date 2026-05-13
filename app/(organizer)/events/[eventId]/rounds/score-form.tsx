@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Button } from '@/components/ui/button'
+import { SubmitButton } from '@/components/submit-button'
 
 export type MatchForScoring = {
   id: string
@@ -160,7 +160,7 @@ export function ScoreForm({
         ))}
       </div>
 
-      <Button type="submit" className="w-full">{submitLabel}</Button>
+      <SubmitButton className="w-full" pendingLabel="Saving…">{submitLabel}</SubmitButton>
     </form>
   )
 }

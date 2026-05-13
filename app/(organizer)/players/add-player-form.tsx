@@ -1,7 +1,7 @@
 'use client'
 
 import { useRef } from 'react'
-import { Button } from '@/components/ui/button'
+import { SubmitButton } from '@/components/submit-button'
 
 const LEVELS = [1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 5.5, 6.0, 6.5, 7.0]
 
@@ -33,7 +33,7 @@ export function AddPlayerForm({ action }: { action: (formData: FormData) => Prom
           <option key={l} value={l}>{l.toFixed(1)}</option>
         ))}
       </select>
-      <Button type="submit">Add</Button>
+      <SubmitButton pendingLabel="Adding…">Add</SubmitButton>
     </form>
   )
 }

@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Button } from '@/components/ui/button'
+import { SubmitButton } from '@/components/submit-button'
 
 type Player = { id: string; name: string; level: number | null }
 
@@ -125,9 +125,9 @@ export function NewEventForm({
         )}
       </div>
 
-      <Button type="submit" disabled={!players.length || !hasEnough}>
+      <SubmitButton disabled={!players.length || !hasEnough} pendingLabel="Creating…">
         Create event
-      </Button>
+      </SubmitButton>
     </form>
   )
 }

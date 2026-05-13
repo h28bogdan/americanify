@@ -2,6 +2,7 @@ import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { Button } from '@/components/ui/button'
+import { SubmitButton } from '@/components/submit-button'
 
 const LEVELS = [1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 5.5, 6.0, 6.5, 7.0]
 
@@ -227,7 +228,7 @@ export default async function PlayerProfilePage({ params }: { params: { playerId
               </select>
             </div>
 
-            <Button type="submit" className="w-full">Save</Button>
+            <SubmitButton className="w-full" pendingLabel="Saving…">Save</SubmitButton>
           </form>
         </div>
       </div>

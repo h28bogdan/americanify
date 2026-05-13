@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Button } from '@/components/ui/button'
+import { SubmitButton } from '@/components/submit-button'
 
 type Player = { id: string; name: string; level: number | null }
 
@@ -124,7 +124,7 @@ export function EditEventForm({
         )}
       </div>
 
-      <Button type="submit" disabled={!hasEnough}>Save changes</Button>
+      <SubmitButton disabled={!hasEnough} pendingLabel="Saving…">Save changes</SubmitButton>
     </form>
   )
 }

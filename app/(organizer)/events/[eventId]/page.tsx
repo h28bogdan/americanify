@@ -2,6 +2,7 @@ import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { Button } from '@/components/ui/button'
+import { SubmitButton } from '@/components/submit-button'
 import { CopyButton } from '@/components/copy-button'
 
 function generateJoinCode() {
@@ -126,7 +127,7 @@ export default async function EventPage({ params, searchParams }: { params: { ev
             <>
               {canStart ? (
                 <form action={startEvent}>
-                  <Button type="submit">Start event</Button>
+                  <SubmitButton pendingLabel="Starting…">Start event</SubmitButton>
                 </form>
               ) : (
                 <p className="text-sm text-destructive self-center">
@@ -139,7 +140,7 @@ export default async function EventPage({ params, searchParams }: { params: { ev
             </>
           )}
           <form action={duplicateEvent}>
-            <Button type="submit" variant="outline">Duplicate event</Button>
+            <SubmitButton variant="outline" pendingLabel="Duplicating…">Duplicate event</SubmitButton>
           </form>
         </div>
 
@@ -183,9 +184,9 @@ export default async function EventPage({ params, searchParams }: { params: { ev
                     <form action={toggleWithdraw}>
                       <input type="hidden" name="event_player_id" value={p.id} />
                       <input type="hidden" name="withdrawn" value={String(p.withdrawn)} />
-                      <Button variant={p.withdrawn ? 'outline' : 'destructive'} size="sm" type="submit">
+                      <SubmitButton variant={p.withdrawn ? 'outline' : 'destructive'} size="sm" pendingLabel="…">
                         {p.withdrawn ? 'Rejoin' : 'Withdraw'}
-                      </Button>
+                      </SubmitButton>
                     </form>
                   )}
                 </div>
@@ -221,7 +222,7 @@ export default async function EventPage({ params, searchParams }: { params: { ev
               </p>
               <div className="flex gap-3">
                 <form action={deleteEvent}>
-                  <Button type="submit" variant="destructive" size="sm">Yes, delete</Button>
+                  <SubmitButton variant="destructive" size="sm" pendingLabel="Deleting…">Yes, delete</SubmitButton>
                 </form>
                 <Link href="?" className="text-sm text-muted-foreground hover:underline self-center">
                   Cancel
