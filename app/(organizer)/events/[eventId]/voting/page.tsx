@@ -96,7 +96,12 @@ export default async function VotingPage({ params }: { params: { eventId: string
 
         {/* Share link */}
         <div className="rounded-lg border border-border px-4 py-3 space-y-1">
-          <p className="text-sm font-medium">Player link</p>
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-medium">Player link</p>
+            <Link href={`/events/${params.eventId}/qr`} className="text-sm text-muted-foreground hover:text-foreground hover:underline">
+              Show QR →
+            </Link>
+          </div>
           <p className="text-sm font-mono text-muted-foreground">{publicUrl}</p>
           <p className="text-xs text-muted-foreground">Share this with players so they can vote and see standings.</p>
         </div>
