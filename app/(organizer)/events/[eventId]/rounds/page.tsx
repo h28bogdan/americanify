@@ -7,6 +7,7 @@ import { SubmitButton } from '@/components/submit-button'
 import { ScoreForm, type MatchForScoring } from './score-form'
 import { generateRound, type MatchHistoryEntry } from '@/lib/algorithms/americano'
 import { generateMexicanoRound } from '@/lib/algorithms/mexicano'
+import { generateTeamAmericanoRound, type TeamMatchHistoryEntry } from '@/lib/algorithms/team-americano'
 
 export default async function RoundsPage({ params, searchParams }: { params: { eventId: string }; searchParams: { edit?: string } }) {
   const supabase = createClient()
@@ -100,29 +101,24 @@ export default async function RoundsPage({ params, searchParams }: { params: { e
       .neq('status', 'completed')
     if (incomplete?.length) return
 
-    // Fetch event format + active players
-    const [{ data: eventData }, { data: eventPlayers }] = await Promise.all([
+    // Fetch event format, active players, active courts in parallel
+    const [{ data: eventData }, { data: eventPlayers }, { data: activeCourts }] = await Promise.all([
       supabase.from('events').select('format').eq('id', params.eventId).single(),
       supabase.from('event_players').select('player_id, sit_out_count, withdrawn').eq('event_id', params.eventId),
+      supabase.from('courts').select('id, court_number, name').eq('event_id', params.eventId).eq('active', true).order('court_number'),
     ])
 
-    const isMexicano = eventData?.format === 'mexicano'
+    const format = eventData?.format ?? 'americano'
+    const isTeamFormat = format === 'team_americano'
+    const isMexicano = format === 'mexicano'
 
     const activePlayers = (eventPlayers ?? [])
       .filter((p) => !p.withdrawn)
       .map((p) => ({ id: p.player_id, sit_out_count: p.sit_out_count }))
 
-    // Fetch active courts
-    const { data: activeCourts } = await supabase
-      .from('courts')
-      .select('id, court_number, name')
-      .eq('event_id', params.eventId)
-      .eq('active', true)
-      .order('court_number')
-
     if (!activeCourts?.length || activePlayers.length < 4) return
 
-    // Build match history (always needed for sit-out tracking; also needed for Americano partner/opponent history)
+    // Build match history from completed rounds
     const { data: allRounds } = await supabase.from('rounds').select('id').eq('event_id', params.eventId)
     const roundIds = allRounds?.map((r) => r.id) ?? []
 
@@ -148,22 +144,60 @@ export default async function RoundsPage({ params, searchParams }: { params: { e
           }
         }
       }
-
       history = Array.from(matchGroups.values())
         .filter((m) => m.A.length === 2 && m.B.length === 2)
         .map((m) => ({ team_a: m.A as [string, string], team_b: m.B as [string, string] }))
     }
 
-    // Run algorithm
-    let result
-    if (isMexicano) {
-      const playersWithPoints = activePlayers.map((p) => ({
-        ...p,
-        points: pointsMap.get(p.id) ?? 0,
+    // Normalised pairings: always [playerIdA1, playerIdA2] vs [playerIdB1, playerIdB2]
+    let pairings: { courtId: string; teamA: [string, string]; teamB: [string, string] }[] = []
+    let sitOutPlayerIds: string[] = []
+
+    if (isTeamFormat) {
+      const { data: eventTeams } = await supabase
+        .from('event_teams')
+        .select('id, player_a_id, player_b_id, sit_out_count')
+        .eq('event_id', params.eventId)
+
+      // Build team opponent history from match player groups
+      const playerToTeam = new Map<string, string>()
+      for (const t of eventTeams ?? []) {
+        playerToTeam.set(t.player_a_id, t.id)
+        playerToTeam.set(t.player_b_id, t.id)
+      }
+      const teamHistory: TeamMatchHistoryEntry[] = history
+        .map((h) => ({ team_a_id: playerToTeam.get(h.team_a[0]) ?? '', team_b_id: playerToTeam.get(h.team_b[0]) ?? '' }))
+        .filter((h) => h.team_a_id && h.team_b_id)
+
+      const teamsInput = (eventTeams ?? []).map((t) => ({
+        id: t.id, player_a_id: t.player_a_id, player_b_id: t.player_b_id, sit_out_count: t.sit_out_count,
       }))
-      result = generateMexicanoRound(playersWithPoints, activeCourts)
+      const result = generateTeamAmericanoRound(teamsInput, activeCourts, teamHistory)
+
+      pairings = result.pairings.map((p) => ({
+        courtId: p.court.id,
+        teamA: [p.team_a.player_a_id, p.team_a.player_b_id],
+        teamB: [p.team_b.player_a_id, p.team_b.player_b_id],
+      }))
+
+      // Increment sit_out_count on event_teams for sitting-out teams
+      for (const teamId of result.sit_out_ids) {
+        const t = (eventTeams ?? []).find((t) => t.id === teamId)
+        if (t) await supabase.from('event_teams').update({ sit_out_count: t.sit_out_count + 1 }).eq('id', teamId)
+      }
+      // For team format, map sit-out team players to player IDs for event_players tracking
+      sitOutPlayerIds = (eventTeams ?? [])
+        .filter((t) => result.sit_out_ids.includes(t.id))
+        .flatMap((t) => [t.player_a_id, t.player_b_id])
+    } else if (isMexicano) {
+      const playersWithPoints = activePlayers.map((p) => ({ ...p, points: pointsMap.get(p.id) ?? 0 }))
+      const result = generateMexicanoRound(playersWithPoints, activeCourts)
+      pairings = result.pairings.map((p) => ({ courtId: p.court.id, teamA: p.team_a, teamB: p.team_b }))
+      sitOutPlayerIds = result.sit_out_ids
     } else {
-      result = generateRound(activePlayers, activeCourts, history)
+      const result = generateRound(activePlayers, activeCourts, history)
+      pairings = result.pairings.map((p) => ({ courtId: p.court.id, teamA: p.team_a, teamB: p.team_b }))
+      sitOutPlayerIds = result.sit_out_ids
     }
 
     // Get next round number
@@ -186,24 +220,24 @@ export default async function RoundsPage({ params, searchParams }: { params: { e
     if (!round) return
 
     // Create matches + match_players
-    for (const pairing of result.pairings) {
+    for (const pairing of pairings) {
       const { data: match } = await supabase
         .from('matches')
-        .insert({ round_id: round.id, court_id: pairing.court.id })
+        .insert({ round_id: round.id, court_id: pairing.courtId })
         .select('id')
         .single()
       if (!match) continue
 
       await supabase.from('match_players').insert([
-        { match_id: match.id, player_id: pairing.team_a[0], team: 'A' },
-        { match_id: match.id, player_id: pairing.team_a[1], team: 'A' },
-        { match_id: match.id, player_id: pairing.team_b[0], team: 'B' },
-        { match_id: match.id, player_id: pairing.team_b[1], team: 'B' },
+        { match_id: match.id, player_id: pairing.teamA[0], team: 'A' },
+        { match_id: match.id, player_id: pairing.teamA[1], team: 'A' },
+        { match_id: match.id, player_id: pairing.teamB[0], team: 'B' },
+        { match_id: match.id, player_id: pairing.teamB[1], team: 'B' },
       ])
     }
 
-    // Increment sit_out_count for players sitting out
-    const sitOutPlayers = activePlayers.filter((p) => result.sit_out_ids.includes(p.id))
+    // Increment sit_out_count for sitting-out players
+    const sitOutPlayers = activePlayers.filter((p) => sitOutPlayerIds.includes(p.id))
     for (const p of sitOutPlayers) {
       await supabase
         .from('event_players')

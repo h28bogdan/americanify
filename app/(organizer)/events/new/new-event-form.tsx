@@ -54,10 +54,10 @@ export function NewEventForm({
       <div className="space-y-2">
         <label className="text-sm font-medium">Format</label>
         <div className="flex gap-3">
-          {(['americano', 'mexicano'] as const).map((f) => (
-            <label key={f} className="flex items-center gap-2 text-sm cursor-pointer capitalize">
-              <input type="radio" name="format" value={f} defaultChecked={f === 'americano'} required />
-              {f.charAt(0).toUpperCase() + f.slice(1)}
+          {([['americano', 'Americano'], ['mexicano', 'Mexicano'], ['team_americano', 'Team Americano']] as const).map(([val, label]) => (
+            <label key={val} className="flex items-center gap-2 text-sm cursor-pointer">
+              <input type="radio" name="format" value={val} defaultChecked={val === 'americano'} required />
+              {label}
             </label>
           ))}
         </div>

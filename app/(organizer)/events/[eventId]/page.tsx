@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { Button } from '@/components/ui/button'
 import { SubmitButton } from '@/components/submit-button'
 import { CopyButton } from '@/components/copy-button'
+import { TeamAssignment } from '@/components/team-assignment'
 
 function generateJoinCode() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
@@ -31,20 +32,46 @@ export default async function EventPage({ params, searchParams }: { params: { ev
 
   const [{ data: event }, { data: eventPlayers }, { data: courts }] = await Promise.all([
     supabase.from('events').select('id, name, status, join_code, format').eq('id', params.eventId).eq('organizer_id', user.id).single(),
-    supabase.from('event_players').select('id, player_id, withdrawn, players(name, level)').eq('event_id', params.eventId).order('players(name)'),
+    supabase.from('event_players').select('id, player_id, withdrawn, players(id, name, level)').eq('event_id', params.eventId).order('players(name)'),
     supabase.from('courts').select('id').eq('event_id', params.eventId),
   ])
 
   if (!event) notFound()
 
+  const isTeamFormat = event.format === 'team_americano'
+
   const players = eventPlayers?.map((ep) => ({
-    id: ep.id,
+    epId: ep.id,
+    id: (ep.players as unknown as { id: string; name: string; level: number | null }).id,
     withdrawn: ep.withdrawn,
-    ...(ep.players as unknown as { name: string; level: number | null }),
+    name: (ep.players as unknown as { id: string; name: string; level: number | null }).name,
+    level: (ep.players as unknown as { id: string; name: string; level: number | null }).level,
   })) ?? []
   const activePlayers = players.filter((p) => !p.withdrawn)
   const courtCount = courts?.length ?? 0
-  const canStart = players.length >= courtCount * 4
+
+  // Fetch teams for team formats
+  let teams: { id: string; playerA: { id: string; name: string; level: number | null }; playerB: { id: string; name: string; level: number | null } }[] = []
+  if (isTeamFormat) {
+    const { data: eventTeams } = await supabase
+      .from('event_teams')
+      .select('id, player_a_id, player_b_id')
+      .eq('event_id', params.eventId)
+
+    const playerMap = new Map(activePlayers.map((p) => [p.id, p]))
+    teams = (eventTeams ?? []).map((t) => ({
+      id: t.id,
+      playerA: playerMap.get(t.player_a_id) ?? { id: t.player_a_id, name: '?', level: null },
+      playerB: playerMap.get(t.player_b_id) ?? { id: t.player_b_id, name: '?', level: null },
+    }))
+  }
+
+  const assignedCount = teams.length * 2
+  const allAssigned = isTeamFormat ? assignedCount === activePlayers.length : true
+  const enoughPlayers = activePlayers.length >= courtCount * 4
+  const canStart = enoughPlayers && allAssigned
+
+  // ── Server actions ──────────────────────────────────────────────
 
   async function startEvent() {
     'use server'
@@ -98,6 +125,55 @@ export default async function EventPage({ params, searchParams }: { params: { ev
     redirect('/dashboard')
   }
 
+  async function createTeam(playerAId: string, playerBId: string) {
+    'use server'
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+    await supabase.from('event_teams').insert({ event_id: params.eventId, player_a_id: playerAId, player_b_id: playerBId })
+    redirect(`/events/${params.eventId}`)
+  }
+
+  async function removeTeam(teamId: string) {
+    'use server'
+    const supabase = createClient()
+    await supabase.from('event_teams').delete().eq('id', teamId)
+    redirect(`/events/${params.eventId}`)
+  }
+
+  async function autoAssignTeams() {
+    'use server'
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+
+    const { data: epRows } = await supabase
+      .from('event_players')
+      .select('player_id, players(level)')
+      .eq('event_id', params.eventId)
+      .eq('withdrawn', false)
+
+    const { data: existing } = await supabase.from('event_teams').select('player_a_id, player_b_id').eq('event_id', params.eventId)
+    const assignedIds = new Set((existing ?? []).flatMap((t) => [t.player_a_id, t.player_b_id]))
+
+    const unassigned = (epRows ?? [])
+      .filter((ep) => !assignedIds.has(ep.player_id))
+      .map((ep) => ({ id: ep.player_id, level: (ep.players as unknown as { level: number | null })?.level ?? 0 }))
+      .sort((a, b) => b.level - a.level)
+
+    const newTeams: { event_id: string; player_a_id: string; player_b_id: string }[] = []
+    let lo = unassigned.length - 1
+    let hi = 0
+    while (hi < lo) {
+      newTeams.push({ event_id: params.eventId, player_a_id: unassigned[hi].id, player_b_id: unassigned[lo].id })
+      hi++
+      lo--
+    }
+
+    if (newTeams.length) await supabase.from('event_teams').insert(newTeams)
+    redirect(`/events/${params.eventId}`)
+  }
+
   const confirmingDelete = searchParams.confirm === 'delete'
 
   return (
@@ -131,7 +207,9 @@ export default async function EventPage({ params, searchParams }: { params: { ev
                 </form>
               ) : (
                 <p className="text-sm text-destructive self-center">
-                  Need {courtCount * 4} players for {courtCount} court{courtCount !== 1 ? 's' : ''} — add more or edit the event.
+                  {!enoughPlayers
+                    ? `Need ${courtCount * 4} players for ${courtCount} court${courtCount !== 1 ? 's' : ''} — add more or edit the event.`
+                    : `${activePlayers.length - assignedCount} player${activePlayers.length - assignedCount !== 1 ? 's' : ''} not yet in a team.`}
                 </p>
               )}
               <Link href={`/events/${params.eventId}/edit`}>
@@ -164,6 +242,20 @@ export default async function EventPage({ params, searchParams }: { params: { ev
           )}
         </div>
 
+        {/* Teams section (team formats, draft only) */}
+        {isTeamFormat && event.status === 'draft' && (
+          <div className="space-y-2">
+            <p className="text-sm font-medium">Teams</p>
+            <TeamAssignment
+              players={activePlayers.map((p) => ({ id: p.id, name: p.name, level: p.level }))}
+              teams={teams}
+              createTeam={createTeam}
+              removeTeam={removeTeam}
+              autoAssign={autoAssignTeams}
+            />
+          </div>
+        )}
+
         {/* Players + courts summary */}
         <div className="space-y-2">
           <p className="text-sm font-medium">
@@ -171,7 +263,7 @@ export default async function EventPage({ params, searchParams }: { params: { ev
           </p>
           <div className="rounded-lg border border-border divide-y divide-border">
             {players.map((p) => (
-              <div key={p.id} className={`flex items-center justify-between px-4 py-2.5 ${p.withdrawn ? 'opacity-40' : ''}`}>
+              <div key={p.epId} className={`flex items-center justify-between px-4 py-2.5 ${p.withdrawn ? 'opacity-40' : ''}`}>
                 <div className="flex items-center gap-2">
                   <span className="text-sm">{p.name}</span>
                   {p.withdrawn && <span className="text-xs text-muted-foreground">withdrawn</span>}
@@ -182,7 +274,7 @@ export default async function EventPage({ params, searchParams }: { params: { ev
                   )}
                   {event.status === 'active' && (
                     <form action={toggleWithdraw}>
-                      <input type="hidden" name="event_player_id" value={p.id} />
+                      <input type="hidden" name="event_player_id" value={p.epId} />
                       <input type="hidden" name="withdrawn" value={String(p.withdrawn)} />
                       <SubmitButton variant={p.withdrawn ? 'outline' : 'destructive'} size="sm" pendingLabel="…">
                         {p.withdrawn ? 'Rejoin' : 'Withdraw'}
@@ -209,10 +301,7 @@ export default async function EventPage({ params, searchParams }: { params: { ev
         {/* Danger zone */}
         <div className="border-t border-border pt-6">
           {!confirmingDelete ? (
-            <Link
-              href="?confirm=delete"
-              className="text-sm text-destructive hover:underline"
-            >
+            <Link href="?confirm=delete" className="text-sm text-destructive hover:underline">
               Delete event
             </Link>
           ) : (
