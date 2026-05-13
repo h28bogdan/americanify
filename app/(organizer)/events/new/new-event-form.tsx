@@ -52,6 +52,18 @@ export function NewEventForm({
       </div>
 
       <div className="space-y-2">
+        <label className="text-sm font-medium">Format</label>
+        <div className="flex gap-3">
+          {(['americano', 'mexicano'] as const).map((f) => (
+            <label key={f} className="flex items-center gap-2 text-sm cursor-pointer capitalize">
+              <input type="radio" name="format" value={f} defaultChecked={f === 'americano'} required />
+              {f.charAt(0).toUpperCase() + f.slice(1)}
+            </label>
+          ))}
+        </div>
+      </div>
+
+      <div className="space-y-2">
         <label htmlFor="court_count" className="text-sm font-medium">Number of courts</label>
         <select
           id="court_count"

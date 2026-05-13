@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { SubmitButton } from '@/components/submit-button'
 import { ScoreForm, type MatchForScoring } from './score-form'
 import { generateRound, type MatchHistoryEntry } from '@/lib/algorithms/americano'
+import { generateMexicanoRound } from '@/lib/algorithms/mexicano'
 
 export default async function RoundsPage({ params, searchParams }: { params: { eventId: string }; searchParams: { edit?: string } }) {
   const supabase = createClient()
@@ -13,7 +14,7 @@ export default async function RoundsPage({ params, searchParams }: { params: { e
   if (!user) redirect('/login')
 
   const [{ data: event }, { data: courts }, { data: rounds }] = await Promise.all([
-    supabase.from('events').select('id, name, status').eq('id', params.eventId).eq('organizer_id', user.id).single(),
+    supabase.from('events').select('id, name, status, format').eq('id', params.eventId).eq('organizer_id', user.id).single(),
     supabase.from('courts').select('id, court_number, name, active').eq('event_id', params.eventId).order('court_number'),
     supabase.from('rounds').select('id, round_number, status').eq('event_id', params.eventId).order('round_number', { ascending: false }),
   ])
@@ -99,11 +100,13 @@ export default async function RoundsPage({ params, searchParams }: { params: { e
       .neq('status', 'completed')
     if (incomplete?.length) return
 
-    // Fetch active players
-    const { data: eventPlayers } = await supabase
-      .from('event_players')
-      .select('player_id, sit_out_count, withdrawn')
-      .eq('event_id', params.eventId)
+    // Fetch event format + active players
+    const [{ data: eventData }, { data: eventPlayers }] = await Promise.all([
+      supabase.from('events').select('format').eq('id', params.eventId).single(),
+      supabase.from('event_players').select('player_id, sit_out_count, withdrawn').eq('event_id', params.eventId),
+    ])
+
+    const isMexicano = eventData?.format === 'mexicano'
 
     const activePlayers = (eventPlayers ?? [])
       .filter((p) => !p.withdrawn)
@@ -119,35 +122,49 @@ export default async function RoundsPage({ params, searchParams }: { params: { e
 
     if (!activeCourts?.length || activePlayers.length < 4) return
 
-    // Build match history for partner/opponent tracking
+    // Build match history (always needed for sit-out tracking; also needed for Americano partner/opponent history)
     const { data: allRounds } = await supabase.from('rounds').select('id').eq('event_id', params.eventId)
     const roundIds = allRounds?.map((r) => r.id) ?? []
 
     let history: MatchHistoryEntry[] = []
+    const pointsMap = new Map<string, number>()
+
     if (roundIds.length) {
-      const { data: allMatches } = await supabase.from('matches').select('id').in('round_id', roundIds)
-      const matchIds = allMatches?.map((m) => m.id) ?? []
+      const { data: allMatches } = await supabase
+        .from('matches')
+        .select('id, match_players(player_id, team), scores(team_a_points, team_b_points)')
+        .in('round_id', roundIds)
 
-      if (matchIds.length) {
-        const { data: allMPs } = await supabase
-          .from('match_players')
-          .select('match_id, player_id, team')
-          .in('match_id', matchIds)
-
-        const matchGroups = new Map<string, { A: string[]; B: string[] }>()
-        for (const mp of allMPs ?? []) {
-          if (!matchGroups.has(mp.match_id)) matchGroups.set(mp.match_id, { A: [], B: [] })
-          matchGroups.get(mp.match_id)![mp.team as 'A' | 'B'].push(mp.player_id)
+      const matchGroups = new Map<string, { A: string[]; B: string[] }>()
+      for (const m of allMatches ?? []) {
+        const score = m.scores as unknown as { team_a_points: number; team_b_points: number } | null
+        const mps = m.match_players as { player_id: string; team: string }[]
+        if (!matchGroups.has(m.id)) matchGroups.set(m.id, { A: [], B: [] })
+        for (const mp of mps ?? []) {
+          matchGroups.get(m.id)![mp.team as 'A' | 'B'].push(mp.player_id)
+          if (score) {
+            const pts = mp.team === 'A' ? score.team_a_points : score.team_b_points
+            pointsMap.set(mp.player_id, (pointsMap.get(mp.player_id) ?? 0) + pts)
+          }
         }
-
-        history = Array.from(matchGroups.values())
-          .filter((m) => m.A.length === 2 && m.B.length === 2)
-          .map((m) => ({ team_a: m.A as [string, string], team_b: m.B as [string, string] }))
       }
+
+      history = Array.from(matchGroups.values())
+        .filter((m) => m.A.length === 2 && m.B.length === 2)
+        .map((m) => ({ team_a: m.A as [string, string], team_b: m.B as [string, string] }))
     }
 
     // Run algorithm
-    const result = generateRound(activePlayers, activeCourts, history)
+    let result
+    if (isMexicano) {
+      const playersWithPoints = activePlayers.map((p) => ({
+        ...p,
+        points: pointsMap.get(p.id) ?? 0,
+      }))
+      result = generateMexicanoRound(playersWithPoints, activeCourts)
+    } else {
+      result = generateRound(activePlayers, activeCourts, history)
+    }
 
     // Get next round number
     const { data: lastRound } = await supabase
@@ -290,7 +307,12 @@ export default async function RoundsPage({ params, searchParams }: { params: { e
           <Link href={`/events/${params.eventId}`} className="text-sm text-muted-foreground hover:underline">
             ← {event.name}
           </Link>
-          <h1 className="mt-1 text-2xl font-semibold">Rounds</h1>
+          <div className="mt-1 flex items-center gap-3">
+            <h1 className="text-2xl font-semibold">Rounds</h1>
+            <span className="rounded-full px-2.5 py-0.5 text-xs font-medium bg-muted text-muted-foreground capitalize">
+              {event.format ?? 'americano'}
+            </span>
+          </div>
         </div>
 
         {/* Courts */}

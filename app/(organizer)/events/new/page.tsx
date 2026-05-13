@@ -26,6 +26,7 @@ export default async function NewEventPage() {
     if (!user) return
 
     const name = (formData.get('name') as string).trim()
+    const format = (formData.get('format') as string) || 'americano'
     const courtCount = parseInt(formData.get('court_count') as string, 10)
     const playerIds = formData.getAll('player_ids') as string[]
 
@@ -33,7 +34,7 @@ export default async function NewEventPage() {
 
     const { data: event, error } = await supabase
       .from('events')
-      .insert({ organizer_id: user.id, name, join_code: generateJoinCode() })
+      .insert({ organizer_id: user.id, name, format, join_code: generateJoinCode() })
       .select('id')
       .single()
 
