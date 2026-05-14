@@ -90,8 +90,8 @@ describe('computeStandings', () => {
     expect(r1.rank).toBe(r2.rank)
   })
 
-  it('skips rank numbers after a tie', () => {
-    // p1 and p2 tied at rank 1 → next distinct player should be rank 3, not 2
+  it('uses dense ranking after a tie — next rank is previous+1, not position+1', () => {
+    // p1 and p2 tied at rank 1 → p3 gets rank 2, not 3 (dense ranking)
     const threePlayers = players.slice(0, 3)
     const matches: ScoredMatchEntry[] = [
       { playerId: 'p1', team: 'A', teamAPoints: 12, teamBPoints: 12 },
@@ -100,7 +100,7 @@ describe('computeStandings', () => {
     ]
     const rows = computeStandings(threePlayers, matches)
     const carol = rows.find((r) => r.playerId === 'p3')!
-    expect(carol.rank).toBe(3)
+    expect(carol.rank).toBe(2)
   })
 
   it('ignores withdrawn players who are not in the players list', () => {
