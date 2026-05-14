@@ -135,11 +135,13 @@ export function ScoreForm({
   roundId,
   action,
   submitLabel = 'Submit scores',
+  showAdvanceButtons = false,
 }: {
   matches: MatchForScoring[]
   roundId: string
   action: (formData: FormData) => Promise<void>
   submitLabel?: string
+  showAdvanceButtons?: boolean
 }) {
   const [scores, setScores] = useState<Record<string, number>>(
     Object.fromEntries(matches.map((m) => [m.id, m.scoreA ?? 12]))
@@ -160,7 +162,18 @@ export function ScoreForm({
         ))}
       </div>
 
-      <SubmitButton className="w-full" pendingLabel="Saving…">{submitLabel}</SubmitButton>
+      {showAdvanceButtons ? (
+        <div className="flex gap-3">
+          <SubmitButton name="intent" value="next_round" className="flex-1" pendingLabel="Saving…">
+            Submit &amp; next round
+          </SubmitButton>
+          <SubmitButton name="intent" value="end_event" variant="outline" pendingLabel="Ending…">
+            End event
+          </SubmitButton>
+        </div>
+      ) : (
+        <SubmitButton className="w-full" pendingLabel="Saving…">{submitLabel}</SubmitButton>
+      )}
     </form>
   )
 }
