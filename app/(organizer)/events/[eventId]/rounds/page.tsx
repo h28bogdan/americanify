@@ -269,6 +269,130 @@ export default async function RoundsPage({ params, searchParams }: { params: { e
     revalidatePath(`/events/${params.eventId}/rounds`)
   }
 
+  async function handleSubmitAndAdvance(formData: FormData) {
+    'use server'
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+
+    const intent = formData.get('intent') as string
+    const roundId = formData.get('round_id') as string
+
+    // Save scores
+    const { data: matches } = await supabase.from('matches').select('id').eq('round_id', roundId)
+    if (!matches?.length) return
+    for (const match of matches) {
+      const teamA = parseInt(formData.get(`score_${match.id}`) as string, 10)
+      if (isNaN(teamA) || teamA < 0 || teamA > 24) return
+      await supabase.from('scores').insert({ match_id: match.id, team_a_points: teamA, team_b_points: 24 - teamA })
+    }
+    await supabase.from('rounds').update({ status: 'completed' }).eq('id', roundId)
+
+    if (intent === 'end_event') {
+      await supabase.from('events').update({ status: 'voting' }).eq('id', params.eventId).eq('organizer_id', user.id)
+      redirect(`/events/${params.eventId}`)
+    }
+
+    // Generate next round — same logic as handleGenerateRound
+    const [{ data: eventData }, { data: eventPlayers }, { data: activeCourts }] = await Promise.all([
+      supabase.from('events').select('format').eq('id', params.eventId).single(),
+      supabase.from('event_players').select('player_id, sit_out_count, withdrawn').eq('event_id', params.eventId),
+      supabase.from('courts').select('id, court_number, name').eq('event_id', params.eventId).eq('active', true).order('court_number'),
+    ])
+
+    const format = eventData?.format ?? 'americano'
+    const isTeamFormat = format === 'team_americano'
+    const isMexicano = format === 'mexicano'
+    const activePlayers = (eventPlayers ?? []).filter((p) => !p.withdrawn).map((p) => ({ id: p.player_id, sit_out_count: p.sit_out_count }))
+    if (!activeCourts?.length || activePlayers.length < 4) {
+      revalidatePath(`/events/${params.eventId}/rounds`)
+      return
+    }
+
+    const { data: allRounds } = await supabase.from('rounds').select('id').eq('event_id', params.eventId)
+    const roundIds = allRounds?.map((r) => r.id) ?? []
+    let history: MatchHistoryEntry[] = []
+    const pointsMap = new Map<string, number>()
+
+    if (roundIds.length) {
+      const { data: allMatches } = await supabase
+        .from('matches')
+        .select('id, match_players(player_id, team), scores(team_a_points, team_b_points)')
+        .in('round_id', roundIds)
+      const matchGroups = new Map<string, { A: string[]; B: string[] }>()
+      for (const m of allMatches ?? []) {
+        const score = m.scores as unknown as { team_a_points: number; team_b_points: number } | null
+        const mps = m.match_players as { player_id: string; team: string }[]
+        if (!matchGroups.has(m.id)) matchGroups.set(m.id, { A: [], B: [] })
+        for (const mp of mps ?? []) {
+          matchGroups.get(m.id)![mp.team as 'A' | 'B'].push(mp.player_id)
+          if (score) {
+            const pts = mp.team === 'A' ? score.team_a_points : score.team_b_points
+            pointsMap.set(mp.player_id, (pointsMap.get(mp.player_id) ?? 0) + pts)
+          }
+        }
+      }
+      history = Array.from(matchGroups.values())
+        .filter((m) => m.A.length === 2 && m.B.length === 2)
+        .map((m) => ({ team_a: m.A as [string, string], team_b: m.B as [string, string] }))
+    }
+
+    let pairings: { courtId: string; teamA: [string, string]; teamB: [string, string] }[] = []
+    let sitOutPlayerIds: string[] = []
+
+    if (isTeamFormat) {
+      const { data: eventTeams } = await supabase.from('event_teams').select('id, player_a_id, player_b_id, sit_out_count').eq('event_id', params.eventId)
+      const playerToTeam = new Map<string, string>()
+      for (const t of eventTeams ?? []) {
+        playerToTeam.set(t.player_a_id, t.id)
+        playerToTeam.set(t.player_b_id, t.id)
+      }
+      const teamHistory = history
+        .map((h) => ({ team_a_id: playerToTeam.get(h.team_a[0]) ?? '', team_b_id: playerToTeam.get(h.team_b[0]) ?? '' }))
+        .filter((h) => h.team_a_id && h.team_b_id)
+      const teamsInput = (eventTeams ?? []).map((t) => ({ id: t.id, player_a_id: t.player_a_id, player_b_id: t.player_b_id, sit_out_count: t.sit_out_count }))
+      const result = generateTeamAmericanoRound(teamsInput, activeCourts, teamHistory)
+      pairings = result.pairings.map((p) => ({ courtId: p.court.id, teamA: [p.team_a.player_a_id, p.team_a.player_b_id], teamB: [p.team_b.player_a_id, p.team_b.player_b_id] }))
+      for (const teamId of result.sit_out_ids) {
+        const t = (eventTeams ?? []).find((t) => t.id === teamId)
+        if (t) await supabase.from('event_teams').update({ sit_out_count: t.sit_out_count + 1 }).eq('id', teamId)
+      }
+      sitOutPlayerIds = (eventTeams ?? []).filter((t) => result.sit_out_ids.includes(t.id)).flatMap((t) => [t.player_a_id, t.player_b_id])
+    } else if (isMexicano) {
+      const playersWithPoints = activePlayers.map((p) => ({ ...p, points: pointsMap.get(p.id) ?? 0 }))
+      const result = generateMexicanoRound(playersWithPoints, activeCourts)
+      pairings = result.pairings.map((p) => ({ courtId: p.court.id, teamA: p.team_a, teamB: p.team_b }))
+      sitOutPlayerIds = result.sit_out_ids
+    } else {
+      const result = generateRound(activePlayers, activeCourts, history)
+      pairings = result.pairings.map((p) => ({ courtId: p.court.id, teamA: p.team_a, teamB: p.team_b }))
+      sitOutPlayerIds = result.sit_out_ids
+    }
+
+    const { data: lastRound } = await supabase.from('rounds').select('round_number').eq('event_id', params.eventId).order('round_number', { ascending: false }).limit(1).single()
+    const roundNumber = (lastRound?.round_number ?? 0) + 1
+    const { data: newRound } = await supabase.from('rounds').insert({ event_id: params.eventId, round_number: roundNumber, status: 'active' }).select('id').single()
+    if (!newRound) { revalidatePath(`/events/${params.eventId}/rounds`); return }
+
+    for (const pairing of pairings) {
+      const { data: match } = await supabase.from('matches').insert({ round_id: newRound.id, court_id: pairing.courtId }).select('id').single()
+      if (!match) continue
+      await supabase.from('match_players').insert([
+        { match_id: match.id, player_id: pairing.teamA[0], team: 'A' },
+        { match_id: match.id, player_id: pairing.teamA[1], team: 'A' },
+        { match_id: match.id, player_id: pairing.teamB[0], team: 'B' },
+        { match_id: match.id, player_id: pairing.teamB[1], team: 'B' },
+      ])
+    }
+
+    const sitOutPlayers = activePlayers.filter((p) => sitOutPlayerIds.includes(p.id))
+    for (const p of sitOutPlayers) {
+      await supabase.from('event_players').update({ sit_out_count: p.sit_out_count + 1 }).eq('event_id', params.eventId).eq('player_id', p.id)
+    }
+
+    revalidatePath(`/events/${params.eventId}/rounds`)
+  }
+
   async function handleUpdateScores(formData: FormData) {
     'use server'
     const supabase = createClient()
@@ -381,7 +505,8 @@ export default async function RoundsPage({ params, searchParams }: { params: { e
             <ScoreForm
               matches={currentMatches}
               roundId={currentRound.id}
-              action={handleSubmitScores}
+              action={handleSubmitAndAdvance}
+              showAdvanceButtons
             />
             {sitOutNames.length > 0 && (
               <p className="text-sm text-muted-foreground">
