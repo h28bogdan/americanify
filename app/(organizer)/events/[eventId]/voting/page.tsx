@@ -2,13 +2,7 @@ import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { SubmitButton } from '@/components/submit-button'
-
-const PUBLIC_CATEGORIES = [
-  { id: 'mvp', name: 'MVP' },
-  { id: 'best_energy', name: 'Best Energy' },
-  { id: 'preferred_partner', name: 'Preferred Partner' },
-  { id: 'toughest_opponent', name: 'Toughest Opponent' },
-]
+import { VOTE_CATEGORIES } from '@/lib/constants/categories'
 
 export default async function VotingPage({ params }: { params: { eventId: string } }) {
   const supabase = createClient()
@@ -48,7 +42,7 @@ export default async function VotingPage({ params }: { params: { eventId: string
   const tallies: Record<string, Tally[]> = {}
   const votersByCategory: Record<string, Set<string>> = {}
 
-  for (const cat of PUBLIC_CATEGORIES) {
+  for (const cat of VOTE_CATEGORIES) {
     tallies[cat.id] = []
     votersByCategory[cat.id] = new Set()
   }
@@ -65,7 +59,7 @@ export default async function VotingPage({ params }: { params: { eventId: string
     }
   }
 
-  for (const cat of PUBLIC_CATEGORIES) {
+  for (const cat of VOTE_CATEGORIES) {
     tallies[cat.id].sort((a, b) => b.count - a.count)
   }
 
@@ -108,7 +102,7 @@ export default async function VotingPage({ params }: { params: { eventId: string
 
         {/* Category tallies */}
         <div className="space-y-4">
-          {PUBLIC_CATEGORIES.map((cat) => {
+          {VOTE_CATEGORIES.map((cat) => {
             const catTallies = tallies[cat.id]
             const voterCount = votersByCategory[cat.id].size
             const leader = catTallies[0]
@@ -118,8 +112,11 @@ export default async function VotingPage({ params }: { params: { eventId: string
             return (
               <div key={cat.id} className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <p className="text-sm font-medium">{cat.name}</p>
-                  <p className="text-xs text-muted-foreground">{voterCount} / {playerCount} voted</p>
+                  <div>
+                    <p className="text-sm font-medium">{cat.name}</p>
+                    <p className="text-xs text-muted-foreground">{cat.description}</p>
+                  </div>
+                  <p className="text-xs text-muted-foreground shrink-0 ml-4">{voterCount} / {playerCount} voted</p>
                 </div>
                 {catTallies.length === 0 ? (
                   <p className="text-sm text-muted-foreground italic">No votes yet.</p>

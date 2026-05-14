@@ -3,13 +3,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { computeStandings, computeTeamStandingsFromRaw, type ScoredMatchEntry, type RawMatch } from '@/lib/utils/standings'
 import { computeAwardWinners } from '@/lib/utils/recap'
-
-const PUBLIC_CATEGORIES = [
-  { id: 'mvp', name: 'MVP' },
-  { id: 'best_energy', name: 'Best Energy' },
-  { id: 'preferred_partner', name: 'Preferred Partner' },
-  { id: 'toughest_opponent', name: 'Toughest Opponent' },
-]
+import { VOTE_CATEGORIES } from '@/lib/constants/categories'
 
 type AnyRow = { name: string; rank: number; points: number; wins: number; diff: number }
 
@@ -84,7 +78,7 @@ export default async function RecapPage({ params }: { params: { eventId: string 
     standings = computeStandings(players, scoredMatches)
   }
 
-  const awards = computeAwardWinners(players, votes ?? [], PUBLIC_CATEGORIES)
+  const awards = computeAwardWinners(players, votes ?? [], VOTE_CATEGORIES)
 
   return (
     <div className="min-h-screen bg-background p-6">

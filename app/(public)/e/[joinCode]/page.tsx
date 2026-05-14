@@ -4,13 +4,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { computeStandings, computeTeamStandingsFromRaw, type ScoredMatchEntry, type RawMatch } from '@/lib/utils/standings'
 import { PlayerPicker, IdentitySaver, ClearIdentityButton } from '@/components/player-identity'
-
-const PUBLIC_CATEGORIES = [
-  { id: 'mvp', name: 'MVP' },
-  { id: 'best_energy', name: 'Best Energy' },
-  { id: 'preferred_partner', name: 'Preferred Partner' },
-  { id: 'toughest_opponent', name: 'Toughest Opponent' },
-]
+import { VOTE_CATEGORIES } from '@/lib/constants/categories'
 
 const STATUS_STYLES: Record<string, string> = {
   active: 'bg-green-100 text-green-800',
@@ -256,7 +250,7 @@ export default async function PublicEventPage({
                   <ClearIdentityButton joinCode={params.joinCode} />
                 </div>
 
-                {PUBLIC_CATEGORIES.map((cat) => {
+                {VOTE_CATEGORIES.map((cat) => {
                   const votedNomineeId = existingVotes[cat.id]
                   const votedNomineeName = votedNomineeId
                     ? players.find((p) => p.id === votedNomineeId)?.name
@@ -270,7 +264,10 @@ export default async function PublicEventPage({
 
                   return (
                     <div key={cat.id} className="space-y-2">
-                      <p className="text-sm font-medium">{cat.name}</p>
+                      <div>
+                        <p className="text-sm font-medium">{cat.name}</p>
+                        <p className="text-xs text-muted-foreground">{cat.description}</p>
+                      </div>
                       {votedNomineeName ? (
                         <div className="rounded-lg border border-border px-4 py-3 flex items-center justify-between bg-muted/30">
                           <span className="text-sm font-medium">{votedNomineeName}</span>
