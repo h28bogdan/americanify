@@ -103,7 +103,7 @@ export async function GET(
       heroEl = h('div', { style: { display: 'flex', flexDirection: 'column', gap: 4 } },
         h('p', { style: { fontSize: 256, fontWeight: 700, color: heroColor, lineHeight: 1, margin: 0, letterSpacing: '-0.04em' } }, numStr),
         h('p', { style: { fontSize: 44, fontWeight: 700, color: heroColor, letterSpacing: '0.2em', margin: 0 } }, `${suffix} PLACE`),
-        h('p', { style: { fontSize: 24, color: '#6d28d9', margin: '16px 0 0', letterSpacing: '0.04em' } }, `out of ${totalPlayers} players`),
+        h('p', { style: { fontSize: 24, color: 'rgba(255,255,255,0.35)', margin: '16px 0 0', letterSpacing: '0.04em' } }, `out of ${totalPlayers} players`),
       )
     } else if (heroType === 'award' && playerAwards.length > 0) {
       const award = playerAwards[0]
@@ -127,10 +127,10 @@ export async function GET(
     const stat = (label: string, value: string) =>
       h('div', { style: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, flex: '1' } },
         h('p', { style: { fontSize: 60, fontWeight: 700, margin: 0, color: '#f8fafc', lineHeight: 1 } }, value),
-        h('p', { style: { fontSize: 16, color: '#4c1d95', margin: 0, letterSpacing: '0.1em', textTransform: 'uppercase' } }, label),
+        h('p', { style: { fontSize: 16, color: 'rgba(255,255,255,0.3)', margin: 0, letterSpacing: '0.1em', textTransform: 'uppercase' } }, label),
       )
 
-    const divider = h('div', { style: { display: 'flex', width: '100%', height: 1, background: '#2d1b69' } })
+    const divider = h('div', { style: { display: 'flex', width: '100%', height: 1, background: 'rgba(255,255,255,0.08)' } })
 
     const card = h('div', {
       style: {
@@ -144,7 +144,7 @@ export async function GET(
     },
       // Branding
       h('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 96 } },
-        h('p', { style: { fontSize: 18, fontWeight: 700, color: '#4c1d95', margin: 0, letterSpacing: '0.14em' } }, 'AMERICANIFY'),
+        h('p', { style: { fontSize: 18, fontWeight: 700, color: 'rgba(255,255,255,0.2)', margin: 0, letterSpacing: '0.14em' } }, 'AMERICANIFY'),
       ),
 
       // Hero
@@ -154,7 +154,7 @@ export async function GET(
       h('div', { style: { display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 64 } },
         h('p', { style: { fontSize: 80, fontWeight: 700, margin: 0, color: '#f8fafc', lineHeight: 1, letterSpacing: '-0.02em' } }, player.name),
         heroType !== 'rank' && playerRow
-          ? h('p', { style: { fontSize: 26, color: '#6d28d9', margin: 0 } }, `${ordinal(playerRow.rank)} of ${totalPlayers} players`)
+          ? h('p', { style: { fontSize: 26, color: 'rgba(255,255,255,0.35)', margin: 0 } }, `${ordinal(playerRow.rank)} of ${totalPlayers} players`)
           : null,
       ),
 
@@ -190,13 +190,13 @@ export async function GET(
       h('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' } },
         bestPartner
           ? h('div', { style: { display: 'flex', flexDirection: 'column', gap: 4 } },
-              h('p', { style: { fontSize: 14, color: '#3b0764', margin: 0, letterSpacing: '0.08em', textTransform: 'uppercase' } }, 'Best partner'),
-              h('p', { style: { fontSize: 24, fontWeight: 600, margin: 0, color: '#4c1d95' } }, `${bestPartner.name} · ${bestPartner.combinedPoints} pts`),
+              h('p', { style: { fontSize: 14, color: 'rgba(255,255,255,0.2)', margin: 0, letterSpacing: '0.08em', textTransform: 'uppercase' } }, 'Best partner'),
+              h('p', { style: { fontSize: 24, fontWeight: 600, margin: 0, color: 'rgba(255,255,255,0.35)' } }, `${bestPartner.name} · ${bestPartner.combinedPoints} pts`),
             )
           : h('div', { style: { display: 'flex' } }),
         h('div', { style: { display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 } },
-          h('p', { style: { fontSize: 16, fontWeight: 600, margin: 0, color: '#3b0764' } }, event.name),
-          h('p', { style: { fontSize: 14, color: '#2d1b69', margin: 0 } }, eventDate),
+          h('p', { style: { fontSize: 16, fontWeight: 600, margin: 0, color: 'rgba(255,255,255,0.25)' } }, event.name),
+          h('p', { style: { fontSize: 14, color: 'rgba(255,255,255,0.15)', margin: 0 } }, eventDate),
         ),
       ),
     )
