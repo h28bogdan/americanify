@@ -46,7 +46,7 @@ export function computeTeamStandings(
     if (i > 0) {
       const prev = stats.get(sorted[i - 1].id)!
       const curr = stats.get(t.id)!
-      if (prev.points !== curr.points || prev.wins !== curr.wins || prev.diff !== curr.diff) rank = i + 1
+      if (prev.points !== curr.points || prev.wins !== curr.wins || prev.diff !== curr.diff) rank++
     }
     const s = stats.get(t.id)!
     return { teamId: t.id, name: `${t.playerAName} & ${t.playerBName}`, rank, ...s }
@@ -132,7 +132,7 @@ export function computeStandings(
       const prev = stats.get(sorted[i - 1].id)!
       const curr = stats.get(p.id)!
       if (prev.points !== curr.points || prev.wins !== curr.wins || prev.diff !== curr.diff) {
-        rank = i + 1
+        rank++
       }
     }
     const s = stats.get(p.id)!
