@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 import { computeStandings, computeTeamStandingsFromRaw, type ScoredMatchEntry, type RawMatch } from '@/lib/utils/standings'
 import { PlayerPicker, IdentitySaver, ClearIdentityButton } from '@/components/player-identity'
 import { AutoRefresh } from '@/components/auto-refresh'
+import { CourtDisplay } from '@/components/court-display'
 import { VOTE_CATEGORIES } from '@/lib/constants/categories'
 
 const STATUS_STYLES: Record<string, string> = {
@@ -178,64 +179,78 @@ export default async function PublicEventPage({
   return (
     <>
       {/* ── TV layout — ≥1280px ──────────────────────────────────── */}
-      <div className="hidden xl:flex h-screen overflow-hidden bg-background">
+      <div className="hidden xl:flex flex-col h-screen overflow-hidden" style={{ background: '#0b0f1a', color: '#f1f5f9' }}>
         <AutoRefresh interval={30000} />
 
-        {/* Left: pairings */}
-        <div className="flex-1 flex flex-col gap-10 p-14 border-r border-border overflow-auto">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{event.name}</p>
-            <p className="mt-1 text-2xl font-semibold">
-              {activeRoundRow ? `Round ${activeRoundRow.round_number}` : 'No active round'}
-            </p>
+        {/* Top bar */}
+        <div className="flex items-center justify-between px-12 py-4 border-b" style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
+          <span className="text-sm font-semibold tracking-widest uppercase" style={{ color: 'rgba(255,255,255,0.35)' }}>
+            Americanify
+          </span>
+          <span className="text-base font-semibold">{event.name}</span>
+          <div className="flex items-center gap-2">
+            <span className="inline-block w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+            <span className="text-sm font-medium" style={{ color: 'rgba(255,255,255,0.5)' }}>
+              {activeRoundRow ? `Round ${activeRoundRow.round_number}` : 'Live'}
+            </span>
           </div>
-
-          {activeMatches.length > 0 ? (
-            <div className="space-y-10">
-              {activeMatches.map((m, i) => (
-                <div key={i}>
-                  <p className="text-sm font-medium text-muted-foreground mb-3 uppercase tracking-wide">{m.courtLabel}</p>
-                  <div className="flex items-center gap-8">
-                    <div className="space-y-1">
-                      {m.teamA.map((p) => (
-                        <p key={p.id} className="text-4xl font-semibold leading-tight">{p.name}</p>
-                      ))}
-                    </div>
-                    <p className="text-3xl text-muted-foreground font-light shrink-0">vs</p>
-                    <div className="space-y-1">
-                      {m.teamB.map((p) => (
-                        <p key={p.id} className="text-4xl font-semibold leading-tight">{p.name}</p>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-2xl text-muted-foreground">Waiting for next round…</p>
-          )}
-
-          {sitOutNames.length > 0 && (
-            <p className="mt-auto text-base text-muted-foreground">
-              Sitting out: {sitOutNames.join(', ')}
-            </p>
-          )}
         </div>
 
-        {/* Right: standings */}
-        <div className="flex-1 flex flex-col gap-10 p-14 overflow-auto">
-          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Standings</p>
-          <div className="space-y-4">
-            {standingsRows.map((row) => (
-              <div key={row.i} className="flex items-baseline gap-5">
-                <span className="text-2xl text-muted-foreground w-10 shrink-0 tabular-nums">{row.rank}</span>
-                <span className="text-4xl font-semibold flex-1 leading-tight">{row.name}</span>
-                <span className="text-4xl font-bold tabular-nums">{row.points}</span>
-                <span className={`text-2xl w-24 text-right tabular-nums ${row.diff > 0 ? 'text-green-700' : row.diff < 0 ? 'text-destructive' : 'text-muted-foreground'}`}>
-                  {row.diff > 0 ? `+${row.diff}` : row.diff}
-                </span>
+        {/* Columns */}
+        <div className="flex flex-1 overflow-hidden">
+
+          {/* Left: pairings — 75% */}
+          <div className="flex-[3] flex flex-col overflow-hidden border-r px-10 py-8 gap-4" style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
+            {activeMatches.length > 0 ? (
+              <div
+                className="flex-1 min-h-0 grid gap-6"
+                style={{
+                  gridTemplateColumns: activeMatches.length === 1 ? '1fr' : 'repeat(2, 1fr)',
+                  gridAutoRows: '1fr',
+                }}
+              >
+                {activeMatches.map((m, i) => (
+                  <CourtDisplay
+                    key={i}
+                    courtLabel={m.courtLabel}
+                    teamA={m.teamA.map((p) => p.name)}
+                    teamB={m.teamB.map((p) => p.name)}
+                    size="lg"
+                    labelColor="rgba(255,255,255,0.7)"
+                  />
+                ))}
               </div>
-            ))}
+            ) : (
+              <p className="flex-1 flex items-center justify-center text-2xl" style={{ color: 'rgba(255,255,255,0.3)' }}>Waiting for next round…</p>
+            )}
+
+            {sitOutNames.length > 0 && (
+              <p className="text-sm shrink-0" style={{ color: 'rgba(255,255,255,0.25)' }}>
+                Sitting out: {sitOutNames.join(', ')}
+              </p>
+            )}
+          </div>
+
+          {/* Right: standings — 25% */}
+          <div className="flex-1 flex flex-col justify-center gap-2 px-8 py-10 overflow-auto">
+            <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: 'rgba(255,255,255,0.35)' }}>
+              Standings
+            </p>
+            {standingsRows.map((row) => {
+              const rankColor = row.rank === 1 ? '#fbbf24' : row.rank === 2 ? '#94a3b8' : row.rank === 3 ? '#f97316' : 'rgba(255,255,255,0.4)'
+              return (
+                <div key={row.i} className="flex items-center gap-3 py-1.5">
+                  <span className="text-lg font-bold w-7 shrink-0 tabular-nums" style={{ color: rankColor }}>
+                    {row.rank}
+                  </span>
+                  <span className="text-lg font-semibold flex-1 leading-tight truncate">{row.name}</span>
+                  <span className="text-lg font-bold tabular-nums shrink-0">{row.points}</span>
+                  <span className="text-sm w-12 text-right tabular-nums shrink-0" style={{ color: row.diff > 0 ? '#4ade80' : row.diff < 0 ? '#f87171' : 'rgba(255,255,255,0.3)' }}>
+                    {row.diff > 0 ? `+${row.diff}` : row.diff}
+                  </span>
+                </div>
+              )
+            })}
           </div>
         </div>
       </div>
@@ -267,20 +282,20 @@ export default async function PublicEventPage({
 
           {/* Active round */}
           {activeRoundRow && activeMatches.length > 0 && (
-            <div className="space-y-2">
+            <div className="space-y-3">
               <p className="text-sm font-medium">Round {activeRoundRow.round_number} — Playing now</p>
-              <div className="rounded-lg border border-border divide-y divide-border">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {activeMatches.map((m, i) => {
                   const allIds = [...m.teamA.map((p) => p.id), ...m.teamB.map((p) => p.id)]
                   const isMyMatch = voter && allIds.includes(voter.id)
                   return (
-                    <div key={i} className={`px-4 py-3 ${isMyMatch ? 'bg-muted/40' : ''}`}>
-                      <p className="text-xs font-medium text-muted-foreground mb-1">{m.courtLabel}</p>
-                      <p className="text-sm">
-                        <span className="font-medium">{m.teamA.map((p) => p.name).join(' & ')}</span>
-                        <span className="text-muted-foreground mx-2">vs</span>
-                        <span className="font-medium">{m.teamB.map((p) => p.name).join(' & ')}</span>
-                      </p>
+                    <div key={i} className={isMyMatch ? 'ring-2 ring-primary rounded-2xl' : ''}>
+                      <CourtDisplay
+                        courtLabel={m.courtLabel}
+                        teamA={m.teamA.map((p) => p.name)}
+                        teamB={m.teamB.map((p) => p.name)}
+                        size="sm"
+                      />
                     </div>
                   )
                 })}
@@ -295,33 +310,21 @@ export default async function PublicEventPage({
           {standings.length > 0 && (
             <div className="space-y-2">
               <p className="text-sm font-medium">Standings</p>
-              <div className="rounded-lg border border-border overflow-hidden">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-border bg-muted/40">
-                      <th className="px-4 py-2.5 text-left font-medium text-muted-foreground w-10">#</th>
-                      <th className="px-4 py-2.5 text-left font-medium text-muted-foreground">Name</th>
-                      <th className="px-4 py-2.5 text-right font-medium text-muted-foreground">Pts</th>
-                      <th className="px-4 py-2.5 text-right font-medium text-muted-foreground">W</th>
-                      <th className="px-4 py-2.5 text-right font-medium text-muted-foreground">Diff</th>
-                      <th className="px-4 py-2.5 text-right font-medium text-muted-foreground">Rds</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border">
-                    {standings.map((row, i) => (
-                      <tr key={i} className={voter?.id === row.playerId ? 'bg-muted/40' : ''}>
-                        <td className="px-4 py-2.5 text-muted-foreground">{row.rank}</td>
-                        <td className="px-4 py-2.5 font-medium">{row.name}</td>
-                        <td className="px-4 py-2.5 text-right font-semibold">{row.points}</td>
-                        <td className="px-4 py-2.5 text-right">{row.wins}</td>
-                        <td className={`px-4 py-2.5 text-right ${row.diff > 0 ? 'text-green-700' : row.diff < 0 ? 'text-destructive' : 'text-muted-foreground'}`}>
-                          {row.diff > 0 ? `+${row.diff}` : row.diff}
-                        </td>
-                        <td className="px-4 py-2.5 text-right text-muted-foreground">{row.roundsPlayed}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="rounded-lg border border-border overflow-hidden divide-y divide-border">
+                {standings.map((row, i) => {
+                  const rankColor = row.rank === 1 ? 'text-amber-500' : row.rank === 2 ? 'text-slate-400' : row.rank === 3 ? 'text-orange-500' : 'text-muted-foreground'
+                  const isMe = voter?.id === row.playerId
+                  return (
+                    <div key={i} className={`flex items-center gap-3 px-4 py-3 ${isMe ? 'bg-muted/50' : ''}`}>
+                      <span className={`text-sm font-bold w-5 tabular-nums shrink-0 ${rankColor}`}>{row.rank}</span>
+                      <span className={`text-sm flex-1 min-w-0 truncate ${isMe ? 'font-semibold' : 'font-medium'}`}>{row.name}</span>
+                      <span className="text-sm font-bold tabular-nums shrink-0">{row.points}</span>
+                      <span className={`text-xs w-10 text-right tabular-nums shrink-0 ${row.diff > 0 ? 'text-green-600' : row.diff < 0 ? 'text-destructive' : 'text-muted-foreground'}`}>
+                        {row.diff > 0 ? `+${row.diff}` : row.diff}
+                      </span>
+                    </div>
+                  )
+                })}
               </div>
             </div>
           )}
