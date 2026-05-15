@@ -9,7 +9,6 @@ type AnyRow = { name: string; rank: number; points: number; wins: number; diff: 
 
 export default async function PublicRecapPage({
   params,
-  searchParams,
 }: {
   params: { joinCode: string }
 }) {
