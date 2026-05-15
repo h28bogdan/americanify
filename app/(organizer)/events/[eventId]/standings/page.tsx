@@ -83,7 +83,7 @@ export default async function StandingsPage({ params }: { params: { eventId: str
           <div className="mt-1 flex items-center gap-3">
             <h1 className="text-2xl font-semibold">Standings</h1>
             {event.status === 'active' && (
-              <span className="text-xs font-medium rounded-full px-2.5 py-0.5 bg-green-100 text-green-800">Live</span>
+              <span className="text-xs font-medium rounded-full px-2.5 py-0.5 bg-green-900/50 text-green-400">Live</span>
             )}
           </div>
         </div>
