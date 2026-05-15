@@ -12,7 +12,6 @@ export default async function PublicRecapPage({
   searchParams,
 }: {
   params: { joinCode: string }
-  searchParams: { p?: string }
 }) {
   const supabase = createClient()
 
@@ -83,8 +82,6 @@ export default async function PublicRecapPage({
 
   const awards = computeAwardWinners(players, votes ?? [], VOTE_CATEGORIES)
 
-  const selectedPlayer = searchParams.p ? players.find((p) => p.id === searchParams.p) : null
-
   return (
     <div className="min-h-screen bg-background p-6">
       <div className="mx-auto max-w-2xl space-y-8">
@@ -128,12 +125,12 @@ export default async function PublicRecapPage({
               </thead>
               <tbody className="divide-y divide-border">
                 {standings.map((row, i) => (
-                  <tr key={i} className={selectedPlayer?.id === row.playerId ? 'bg-muted/40' : ''}>
+                  <tr key={i}>
                     <td className="px-4 py-2.5 text-muted-foreground">{row.rank}</td>
                     <td className="px-4 py-2.5 font-medium">{row.name}</td>
                     <td className="px-4 py-2.5 text-right font-semibold">{row.points}</td>
                     <td className="px-4 py-2.5 text-right">{row.wins}</td>
-                    <td className={`px-4 py-2.5 text-right ${row.diff > 0 ? 'text-green-700' : row.diff < 0 ? 'text-destructive' : 'text-muted-foreground'}`}>
+                    <td className={`px-4 py-2.5 text-right ${row.diff > 0 ? 'text-green-400' : row.diff < 0 ? 'text-destructive' : 'text-muted-foreground'}`}>
                       {row.diff > 0 ? `+${row.diff}` : row.diff}
                     </td>
                   </tr>
@@ -146,33 +143,20 @@ export default async function PublicRecapPage({
         {/* Get my card */}
         <div className="space-y-2">
           <p className="text-sm font-medium">Get your card</p>
-          {!selectedPlayer ? (
-            <div className="rounded-lg border border-border divide-y divide-border">
-              {players.map((p) => (
-                <Link
-                  key={p.id}
-                  href={`/e/${params.joinCode}/recap?p=${p.id}`}
-                  className="flex items-center px-4 py-3 text-sm font-medium hover:bg-muted/50 transition-colors"
-                >
-                  {p.name}
-                </Link>
-              ))}
-            </div>
-          ) : (
-            <div className="flex items-center gap-4">
+          <div className="rounded-lg border border-border divide-y divide-border">
+            {players.map((p) => (
               <a
-                href={`/api/card/${event.id}/${selectedPlayer.id}`}
+                key={p.id}
+                href={`/api/card/${event.id}/${p.id}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center rounded-lg bg-foreground px-4 py-2 text-sm font-medium text-background hover:opacity-90 transition-opacity"
+                className="flex items-center justify-between px-4 py-3 text-sm font-medium hover:bg-muted/50 transition-colors"
               >
-                Open {selectedPlayer.name}'s card →
+                {p.name}
+                <span className="text-muted-foreground">→</span>
               </a>
-              <Link href={`/e/${params.joinCode}/recap`} className="text-sm text-muted-foreground hover:underline">
-                Change
-              </Link>
-            </div>
-          )}
+            ))}
+          </div>
         </div>
       </div>
     </div>

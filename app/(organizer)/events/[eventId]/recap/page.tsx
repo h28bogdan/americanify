@@ -133,7 +133,7 @@ export default async function RecapPage({ params }: { params: { eventId: string 
                     <td className="px-4 py-2.5 font-medium">{row.name}</td>
                     <td className="px-4 py-2.5 text-right font-semibold">{row.points}</td>
                     <td className="px-4 py-2.5 text-right">{row.wins}</td>
-                    <td className={`px-4 py-2.5 text-right ${row.diff > 0 ? 'text-green-700' : row.diff < 0 ? 'text-destructive' : 'text-muted-foreground'}`}>
+                    <td className={`px-4 py-2.5 text-right ${row.diff > 0 ? 'text-green-400' : row.diff < 0 ? 'text-destructive' : 'text-muted-foreground'}`}>
                       {row.diff > 0 ? `+${row.diff}` : row.diff}
                     </td>
                   </tr>

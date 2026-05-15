@@ -20,9 +20,9 @@ const STATUS_LABELS: Record<string, string> = {
 
 const STATUS_STYLES: Record<string, string> = {
   draft: 'bg-muted text-muted-foreground',
-  active: 'bg-green-100 text-green-800',
-  voting: 'bg-blue-100 text-blue-800',
-  published: 'bg-purple-100 text-purple-800',
+  active: 'bg-green-900/50 text-green-400',
+  voting: 'bg-blue-900/50 text-blue-400',
+  published: 'bg-purple-900/50 text-purple-400',
 }
 
 export default async function EventPage({ params, searchParams }: { params: { eventId: string }; searchParams: { confirm?: string } }) {
