@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { computeStandings, computeTeamStandingsFromRaw, type ScoredMatchEntry, type RawMatch } from '@/lib/utils/standings'
 import { PlayerPicker, IdentitySaver, ClearIdentityButton } from '@/components/player-identity'
-import { AutoRefresh } from '@/components/auto-refresh'
+import { RealtimeRefresh } from '@/components/realtime-refresh'
 import { CourtDisplay } from '@/components/court-display'
 import { VOTE_CATEGORIES } from '@/lib/constants/categories'
 
@@ -180,7 +180,7 @@ export default async function PublicEventPage({
     <>
       {/* ── TV layout — ≥1280px ──────────────────────────────────── */}
       <div className="hidden xl:flex flex-col h-screen overflow-hidden" style={{ background: '#0b0f1a', color: '#f1f5f9' }}>
-        <AutoRefresh interval={30000} />
+        {event.status === 'active' && <RealtimeRefresh eventId={event.id} />}
 
         {/* Top bar */}
         <div className="flex items-center justify-between px-12 py-4 border-b" style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
@@ -266,6 +266,7 @@ export default async function PublicEventPage({
 
       {/* ── Mobile layout — <1280px ──────────────────────────────── */}
       <div className="xl:hidden min-h-screen bg-background p-6">
+        {event.status === 'active' && <RealtimeRefresh eventId={event.id} />}
         <div className="mx-auto max-w-2xl space-y-6">
 
           {/* Header */}
