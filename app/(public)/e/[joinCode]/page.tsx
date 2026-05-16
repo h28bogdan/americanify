@@ -203,21 +203,21 @@ export default async function PublicEventPage({
           <div className="flex-[3] flex flex-col overflow-hidden border-r px-10 py-8 gap-4" style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
             {activeMatches.length > 0 ? (
               <div
-                className="flex-1 min-h-0 grid gap-6"
+                className="grid gap-6"
                 style={{
                   gridTemplateColumns: activeMatches.length === 1 ? '1fr' : 'repeat(2, 1fr)',
-                  gridAutoRows: '1fr',
                 }}
               >
                 {activeMatches.map((m, i) => (
-                  <CourtDisplay
-                    key={i}
-                    courtLabel={m.courtLabel}
-                    teamA={m.teamA.map((p) => p.name)}
-                    teamB={m.teamB.map((p) => p.name)}
-                    size="lg"
-                    labelColor="rgba(255,255,255,0.7)"
-                  />
+                  <div key={i} style={{ aspectRatio: '4/3' }}>
+                    <CourtDisplay
+                      courtLabel={m.courtLabel}
+                      teamA={m.teamA.map((p) => p.name)}
+                      teamB={m.teamB.map((p) => p.name)}
+                      size="lg"
+                      labelColor="rgba(255,255,255,0.7)"
+                    />
+                  </div>
                 ))}
               </div>
             ) : (
@@ -232,7 +232,7 @@ export default async function PublicEventPage({
           </div>
 
           {/* Right: standings — 25% */}
-          <div className="flex-1 flex flex-col justify-center px-8 py-10 overflow-auto">
+          <div className="flex-1 flex flex-col px-8 py-8 overflow-auto">
             <table className="w-full border-collapse">
               <thead>
                 <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
@@ -248,11 +248,11 @@ export default async function PublicEventPage({
                   const rankColor = row.rank === 1 ? '#fbbf24' : row.rank === 2 ? '#94a3b8' : row.rank === 3 ? '#f97316' : 'rgba(255,255,255,0.4)'
                   return (
                     <tr key={row.i} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                      <td className="py-4 pr-6 text-lg font-bold tabular-nums" style={{ color: rankColor }}>{row.rank}</td>
-                      <td className="py-4 text-lg font-semibold truncate max-w-0" style={{ width: '100%' }}>{row.name}</td>
-                      <td className="py-4 pl-6 text-lg font-bold tabular-nums text-right">{row.points}</td>
-                      <td className="py-4 pl-6 text-lg tabular-nums text-right" style={{ color: 'rgba(255,255,255,0.5)' }}>{row.wins}</td>
-                      <td className="py-4 pl-6 text-sm tabular-nums text-right" style={{ color: row.diff > 0 ? '#4ade80' : row.diff < 0 ? '#f87171' : 'rgba(255,255,255,0.3)' }}>
+                      <td className="py-2.5 pr-6 text-lg font-bold tabular-nums" style={{ color: rankColor }}>{row.rank}</td>
+                      <td className="py-2.5 text-lg font-semibold truncate max-w-0" style={{ width: '100%' }}>{row.name}</td>
+                      <td className="py-2.5 pl-6 text-lg font-bold tabular-nums text-right">{row.points}</td>
+                      <td className="py-2.5 pl-6 text-lg tabular-nums text-right" style={{ color: 'rgba(255,255,255,0.5)' }}>{row.wins}</td>
+                      <td className="py-2.5 pl-6 text-sm tabular-nums text-right" style={{ color: row.diff > 0 ? '#4ade80' : row.diff < 0 ? '#f87171' : 'rgba(255,255,255,0.3)' }}>
                         {row.diff > 0 ? `+${row.diff}` : row.diff}
                       </td>
                     </tr>

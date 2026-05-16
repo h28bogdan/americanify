@@ -9,7 +9,11 @@ type Props = {
 export function CourtDisplay({ courtLabel, teamA, teamB, size = 'sm', labelColor }: Props) {
   const isLg = size === 'lg'
 
-  const chipClass = isLg
+  const chipA = isLg
+    ? 'bg-gray-900 shadow-sm rounded-xl px-4 py-3 text-xl font-bold text-white text-center w-full'
+    : 'bg-gray-900 shadow-sm rounded-lg px-2 py-1.5 text-xs font-semibold text-white text-center truncate w-full'
+
+  const chipB = isLg
     ? 'bg-white/95 shadow-sm rounded-xl px-4 py-3 text-xl font-bold text-gray-800 text-center w-full'
     : 'bg-white/95 shadow-sm rounded-lg px-2 py-1.5 text-xs font-semibold text-gray-800 text-center truncate w-full'
 
@@ -36,22 +40,32 @@ export function CourtDisplay({ courtLabel, teamA, teamB, size = 'sm', labelColor
           <div className="absolute top-3 bottom-3 w-px bg-white/50" style={{ right: '15%' }} />
           <div className="absolute h-px bg-white/45" style={{ top: '50%', left: '15%', right: '15%' }} />
 
+          {/* VS badge */}
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20">
+            <span
+              className="flex items-center justify-center rounded-full bg-white/90 font-black text-green-700 select-none"
+              style={{ fontSize: isLg ? 13 : 9, width: isLg ? 36 : 22, height: isLg ? 36 : 22 }}
+            >
+              VS
+            </span>
+          </div>
+
           {/* Players */}
           <div className="relative grid grid-cols-2 z-10 h-full" style={{ minHeight: minH }}>
             <div className="flex flex-col h-full">
               <div className={`flex-1 flex items-center justify-center ${cellPad}`}>
-                <div className={chipClass}>{teamA[0]}</div>
+                <div className={chipA}>{teamA[0]}</div>
               </div>
               <div className={`flex-1 flex items-center justify-center ${cellPadB}`}>
-                <div className={chipClass}>{teamA[1]}</div>
+                <div className={chipA}>{teamA[1]}</div>
               </div>
             </div>
             <div className="flex flex-col h-full">
               <div className={`flex-1 flex items-center justify-center ${cellPad}`}>
-                <div className={chipClass}>{teamB[0]}</div>
+                <div className={chipB}>{teamB[0]}</div>
               </div>
               <div className={`flex-1 flex items-center justify-center ${cellPadB}`}>
-                <div className={chipClass}>{teamB[1]}</div>
+                <div className={chipB}>{teamB[1]}</div>
               </div>
             </div>
           </div>
