@@ -194,6 +194,11 @@ export default async function EventPage({ params, searchParams }: { params: { ev
             <Link href={`/events/${params.eventId}/qr`} className="text-sm text-muted-foreground hover:text-foreground hover:underline">
               QR →
             </Link>
+            {event.status !== 'draft' && (
+              <Link href={`/events/${params.eventId}/player-links`} className="text-sm text-muted-foreground hover:text-foreground hover:underline">
+                Player links →
+              </Link>
+            )}
           </div>
         </div>
 

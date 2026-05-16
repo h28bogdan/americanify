@@ -341,7 +341,9 @@ export default async function PublicEventPage({
                     <p className="text-sm font-medium">
                       Voting as <span className="font-semibold">{voter.name}</span>
                     </p>
-                    <ClearIdentityButton joinCode={params.joinCode} />
+                    {Object.keys(existingVotes).length === 0 && (
+                      <ClearIdentityButton joinCode={params.joinCode} />
+                    )}
                   </div>
 
                   {VOTE_CATEGORIES.map((cat) => {
