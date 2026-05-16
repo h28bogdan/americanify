@@ -232,25 +232,34 @@ export default async function PublicEventPage({
           </div>
 
           {/* Right: standings — 25% */}
-          <div className="flex-1 flex flex-col justify-center gap-2 px-8 py-10 overflow-auto">
-            <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: 'rgba(255,255,255,0.35)' }}>
-              Standings
-            </p>
-            {standingsRows.map((row) => {
-              const rankColor = row.rank === 1 ? '#fbbf24' : row.rank === 2 ? '#94a3b8' : row.rank === 3 ? '#f97316' : 'rgba(255,255,255,0.4)'
-              return (
-                <div key={row.i} className="flex items-center gap-3 py-1.5">
-                  <span className="text-lg font-bold w-7 shrink-0 tabular-nums" style={{ color: rankColor }}>
-                    {row.rank}
-                  </span>
-                  <span className="text-lg font-semibold flex-1 leading-tight truncate">{row.name}</span>
-                  <span className="text-lg font-bold tabular-nums shrink-0">{row.points}</span>
-                  <span className="text-sm w-12 text-right tabular-nums shrink-0" style={{ color: row.diff > 0 ? '#4ade80' : row.diff < 0 ? '#f87171' : 'rgba(255,255,255,0.3)' }}>
-                    {row.diff > 0 ? `+${row.diff}` : row.diff}
-                  </span>
-                </div>
-              )
-            })}
+          <div className="flex-1 flex flex-col justify-center px-8 py-10 overflow-auto">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                  <th className="pb-2 text-left pr-6 w-8" style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase' }}>#</th>
+                  <th className="pb-2 text-left" style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase' }}>Player</th>
+                  <th className="pb-2 text-right pl-6 w-16" style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase' }}>Pts</th>
+                  <th className="pb-2 text-right pl-6 w-12" style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase' }}>W</th>
+                  <th className="pb-2 text-right pl-6 w-16" style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase' }}>+/−</th>
+                </tr>
+              </thead>
+              <tbody>
+                {standingsRows.map((row) => {
+                  const rankColor = row.rank === 1 ? '#fbbf24' : row.rank === 2 ? '#94a3b8' : row.rank === 3 ? '#f97316' : 'rgba(255,255,255,0.4)'
+                  return (
+                    <tr key={row.i} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                      <td className="py-4 pr-6 text-lg font-bold tabular-nums" style={{ color: rankColor }}>{row.rank}</td>
+                      <td className="py-4 text-lg font-semibold truncate max-w-0" style={{ width: '100%' }}>{row.name}</td>
+                      <td className="py-4 pl-6 text-lg font-bold tabular-nums text-right">{row.points}</td>
+                      <td className="py-4 pl-6 text-lg tabular-nums text-right" style={{ color: 'rgba(255,255,255,0.5)' }}>{row.wins}</td>
+                      <td className="py-4 pl-6 text-sm tabular-nums text-right" style={{ color: row.diff > 0 ? '#4ade80' : row.diff < 0 ? '#f87171' : 'rgba(255,255,255,0.3)' }}>
+                        {row.diff > 0 ? `+${row.diff}` : row.diff}
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
