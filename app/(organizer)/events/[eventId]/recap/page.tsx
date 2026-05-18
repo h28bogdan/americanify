@@ -1,5 +1,6 @@
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
+import { ShareCardButton } from '@/components/share-card-button'
 import { createClient } from '@/lib/supabase/server'
 import { computeStandings, computeTeamStandingsFromRaw, type ScoredMatchEntry, type RawMatch } from '@/lib/utils/standings'
 import { computeAwardWinners } from '@/lib/utils/recap'
@@ -150,14 +151,24 @@ export default async function RecapPage({ params }: { params: { eventId: string 
             {players.map((p) => (
               <div key={p.id} className="flex items-center justify-between px-4 py-2.5">
                 <span className="text-sm">{p.name}</span>
-                <a
-                  href={`/api/card/${params.eventId}/${p.id}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-xs text-muted-foreground hover:text-foreground hover:underline transition-colors"
-                >
-                  View card →
-                </a>
+                <div className="flex items-center gap-3">
+                  <a
+                    href={`/card/${params.eventId}/${p.id}?name=${encodeURIComponent(p.name)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    View
+                  </a>
+                  <ShareCardButton
+                    eventId={params.eventId}
+                    playerId={p.id}
+                    playerName={p.name}
+                    className="text-xs text-primary font-medium hover:opacity-80 transition-opacity disabled:opacity-50"
+                  >
+                    Share →
+                  </ShareCardButton>
+                </div>
               </div>
             ))}
           </div>

@@ -1,5 +1,6 @@
 import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
+import { ShareCardButton } from '@/components/share-card-button'
 import { createClient } from '@/lib/supabase/server'
 import { computeStandings, computeTeamStandingsFromRaw, type ScoredMatchEntry, type RawMatch } from '@/lib/utils/standings'
 import { computeAwardWinners } from '@/lib/utils/recap'
@@ -144,16 +145,27 @@ export default async function PublicRecapPage({
           <p className="text-sm font-medium">Get your card</p>
           <div className="rounded-lg border border-border divide-y divide-border">
             {players.map((p) => (
-              <a
-                key={p.id}
-                href={`/api/card/${event.id}/${p.id}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-between px-4 py-3 text-sm font-medium hover:bg-muted/50 transition-colors"
-              >
-                {p.name}
-                <span className="text-muted-foreground">→</span>
-              </a>
+              <div key={p.id} className="flex items-center justify-between px-4 py-3">
+                <span className="text-sm font-medium">{p.name}</span>
+                <div className="flex items-center gap-3">
+                  <a
+                    href={`/card/${event.id}/${p.id}?name=${encodeURIComponent(p.name)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    View
+                  </a>
+                  <ShareCardButton
+                    eventId={event.id}
+                    playerId={p.id}
+                    playerName={p.name}
+                    className="text-xs text-primary font-medium hover:opacity-80 transition-opacity disabled:opacity-50"
+                  >
+                    Share →
+                  </ShareCardButton>
+                </div>
+              </div>
             ))}
           </div>
         </div>
