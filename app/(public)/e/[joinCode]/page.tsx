@@ -200,26 +200,39 @@ export default async function PublicEventPage({
         <div className="flex flex-1 overflow-hidden">
 
           {/* Left: pairings — 75% */}
-          <div className="flex-[3] flex flex-col overflow-hidden border-r px-10 py-8 gap-4" style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
+          <div className="flex-[3] flex flex-col overflow-hidden border-r px-10 py-3 gap-2" style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
             {activeMatches.length > 0 ? (
-              <div
-                className="grid gap-6"
-                style={{
-                  gridTemplateColumns: activeMatches.length === 1 ? '1fr' : 'repeat(2, 1fr)',
-                }}
-              >
-                {activeMatches.map((m, i) => (
-                  <div key={i} style={{ aspectRatio: '4/3' }}>
-                    <CourtDisplay
-                      courtLabel={m.courtLabel}
-                      teamA={m.teamA.map((p) => p.name)}
-                      teamB={m.teamB.map((p) => p.name)}
-                      size="lg"
-                      labelColor="rgba(255,255,255,0.7)"
-                    />
+              (() => {
+                const n = activeMatches.length
+                const cols = n === 1 ? 1 : n <= 3 ? n : n === 4 ? 2 : 3
+                const rows = n <= 3 ? 1 : n <= 6 ? 2 : 3
+                const courtSize = n <= 4 ? 'lg' : 'md'
+                const gap = n <= 4 ? 24 : 12
+                return (
+                  <div
+                    className="flex-1 grid min-h-0"
+                    style={{
+                      gridTemplateColumns: `repeat(${cols}, 1fr)`,
+                      gridTemplateRows: `repeat(${rows}, 1fr)`,
+                      gap,
+                    }}
+                  >
+                    {activeMatches.map((m, i) => (
+                      <div key={i} className="flex items-center justify-center min-h-0">
+                        <div style={{ width: '100%', aspectRatio: '4/3', maxHeight: '100%' }}>
+                          <CourtDisplay
+                            courtLabel={m.courtLabel}
+                            teamA={m.teamA.map((p) => p.name)}
+                            teamB={m.teamB.map((p) => p.name)}
+                            size={courtSize}
+                            labelColor="rgba(255,255,255,0.7)"
+                          />
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
+                )
+              })()
             ) : (
               <p className="flex-1 flex items-center justify-center text-2xl" style={{ color: 'rgba(255,255,255,0.3)' }}>Waiting for next round…</p>
             )}
@@ -232,35 +245,40 @@ export default async function PublicEventPage({
           </div>
 
           {/* Right: standings — 25% */}
-          <div className="flex-1 flex flex-col px-8 py-8 overflow-auto">
-            <table className="w-full border-collapse">
-              <thead>
-                <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-                  <th className="pb-2 text-left pr-6 w-8" style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase' }}>#</th>
-                  <th className="pb-2 text-left" style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase' }}>Player</th>
-                  <th className="pb-2 text-right pl-6 w-16" style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase' }}>Pts</th>
-                  <th className="pb-2 text-right pl-6 w-12" style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase' }}>W</th>
-                  <th className="pb-2 text-right pl-6 w-16" style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase' }}>+/−</th>
-                </tr>
-              </thead>
-              <tbody>
-                {standingsRows.map((row) => {
-                  const rankColor = row.rank === 1 ? '#fbbf24' : row.rank === 2 ? '#94a3b8' : row.rank === 3 ? '#f97316' : 'rgba(255,255,255,0.4)'
-                  return (
-                    <tr key={row.i} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                      <td className="py-2.5 pr-6 text-lg font-bold tabular-nums" style={{ color: rankColor }}>{row.rank}</td>
-                      <td className="py-2.5 text-lg font-semibold truncate max-w-0" style={{ width: '100%' }}>{row.name}</td>
-                      <td className="py-2.5 pl-6 text-lg font-bold tabular-nums text-right">{row.points}</td>
-                      <td className="py-2.5 pl-6 text-lg tabular-nums text-right" style={{ color: 'rgba(255,255,255,0.5)' }}>{row.wins}</td>
-                      <td className="py-2.5 pl-6 text-sm tabular-nums text-right" style={{ color: row.diff > 0 ? '#4ade80' : row.diff < 0 ? '#f87171' : 'rgba(255,255,255,0.3)' }}>
-                        {row.diff > 0 ? `+${row.diff}` : row.diff}
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
+          {(() => {
+            const n = standingsRows.length
+            const fontSize = n <= 12 ? 16 : n <= 18 ? 13 : n <= 24 ? 11 : 10
+            const headerStyle = { fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase' as const }
+            return (
+              <div className="flex-1 flex flex-col overflow-hidden px-8 py-4">
+                {/* Header */}
+                <div className="flex items-center shrink-0 pb-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                  <span className="w-6 shrink-0 pr-3" style={headerStyle}>#</span>
+                  <span className="flex-1 min-w-0" style={headerStyle}>Player</span>
+                  <span className="w-10 text-right shrink-0" style={headerStyle}>Pts</span>
+                  <span className="w-8 text-right shrink-0" style={headerStyle}>W</span>
+                  <span className="w-10 text-right shrink-0" style={headerStyle}>+/−</span>
+                </div>
+                {/* Rows — each takes equal share of remaining height */}
+                <div className="flex-1 flex flex-col min-h-0">
+                  {standingsRows.map((row) => {
+                    const rankColor = row.rank === 1 ? '#fbbf24' : row.rank === 2 ? '#94a3b8' : row.rank === 3 ? '#f97316' : 'rgba(255,255,255,0.4)'
+                    return (
+                      <div key={row.i} className="flex items-center flex-1 min-h-0" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', fontSize }}>
+                        <span className="w-6 shrink-0 pr-3 font-bold tabular-nums" style={{ color: rankColor }}>{row.rank}</span>
+                        <span className="flex-1 min-w-0 truncate font-semibold">{row.name}</span>
+                        <span className="w-10 text-right shrink-0 font-bold tabular-nums">{row.points}</span>
+                        <span className="w-8 text-right shrink-0 tabular-nums" style={{ color: 'rgba(255,255,255,0.5)' }}>{row.wins}</span>
+                        <span className="w-10 text-right shrink-0 tabular-nums" style={{ color: row.diff > 0 ? '#4ade80' : row.diff < 0 ? '#f87171' : 'rgba(255,255,255,0.3)' }}>
+                          {row.diff > 0 ? `+${row.diff}` : row.diff}
+                        </span>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )
+          })()}
         </div>
       </div>
 

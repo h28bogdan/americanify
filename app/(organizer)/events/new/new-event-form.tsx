@@ -99,9 +99,26 @@ export function NewEventForm({
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <p className="text-sm font-medium">Players</p>
-          <p className={`text-sm ${hasEnough ? 'text-muted-foreground' : 'text-destructive'}`}>
-            {selectedIds.size} selected · {needed} needed
-          </p>
+          <div className="flex items-center gap-3">
+            {players.length > 0 && (
+              <button
+                type="button"
+                onClick={() =>
+                  setSelectedIds(
+                    selectedIds.size === players.length
+                      ? new Set()
+                      : new Set(players.map((p) => p.id))
+                  )
+                }
+                className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+              >
+                {selectedIds.size === players.length ? 'Deselect all' : 'Select all'}
+              </button>
+            )}
+            <p className={`text-sm ${hasEnough ? 'text-muted-foreground' : 'text-destructive'}`}>
+              {selectedIds.size} selected · {needed} needed
+            </p>
+          </div>
         </div>
 
         {!players.length ? (
